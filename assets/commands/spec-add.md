@@ -8,7 +8,7 @@ You are operating the **Spec Growth** system in this repository (load the `spec-
 
 2. **Clarify** (max 4 questions): what and for whom; acceptance criteria. Choose `kind` = `fix` | `feature` | `architecture` | `refactor` and justify it in one line (a `refactor` does not change behavior: its proof is the green suite + a regression `[@test]`). For `feature`/`architecture`, ask for the **outcome**: *"what result do you expect and how will we know it was worth it?"* — recorded as "Expected outcome" in `proposal.md`; if unclear, note it as an open doubt (it does not block).
 
-3. **Technical alternatives** — mandatory when the request **embeds a technical decision** ("use SQLite", "with library X", "all client-side"); skip only for a trivial `fix`. If it applies:
+3. **Technical alternatives** — mandatory when the change touches **persistence/state, concurrency, networking, platform SDKs, security/auth, or a new dependency/library** — even when the request names no technology (that is exactly the case where it matters); skip only for a trivial `fix`. If it applies:
    - **Option 0 — reuse**: search the capability registry (`provides: [cap:x]`) and the graph: does something already solve this? If so: "use contract, do not rebuild".
    - Propose **2–3 alternatives** (including the requested one) evaluated against: requirements; actual repo size/context (e.g., if it stores huge amounts of data, contrast SQLite vs MySQL/Postgres with that evidence); cost; risks; reversibility; which zones/invariants it touches.
    - Present a **short table** (option · why yes · why not · recommendation) and ask the human to choose. **The decision is human.**

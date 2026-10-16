@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, existsSync, statSync, lstatSync } from "node:fs";
 import { join, relative, normalize } from "node:path";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 export const clean = (s) => String(s).trim().replace(/^["']|["']$/g, "").trim();
 export const arr = (v) => (Array.isArray(v) ? v : v === undefined || v === null || v === "" ? [] : [v]);
@@ -324,6 +325,10 @@ export function targetsOverlap(a, b) {
 export function pathCoveredBy(relPath, target) {
   const p = pathKey(relPath);
   const t = pathKey(target);
+  if (/[*?]/.test(t)) {
+    const re = globToRegExp(t);
+    return re.test(p) || re.test(p + "/");
+  }
   return p === t || p.startsWith(t + "/");
 }
 
@@ -506,6 +511,52 @@ export function expandTarget(root, target, tracked) {
   const matches = tracked.map(pathKey).filter((f) => re.test(f));
   if (matches.length > 2000) return null;
   return matches;
+}
+
+// Content fingerprint of the files covered by the given targets/tests (evidence
+// freshness): survives "commit right after green", catches edits without commit.
+// Literal files: as-is. Directories/globs: code files on disk (includes untracked).
+// Returns null when not evaluable (empty, too large, or a pattern starting with a wildcard).
+export function targetsFingerprint(root, paths) {
+  const set = new Map();
+  const add = (rel, abs) => {
+    const k = pathKey(rel);
+    if (!set.has(k)) set.set(k, abs);
+  };
+  for (const t of paths) {
+    const ts = String(t);
+    if (/[*?]/.test(ts)) {
+      const base = ts.slice(0, ts.search(/[*?]/)).replace(/[\\/]+$/, "");
+      if (!base) return null;
+      const baseAbs = join(root, base);
+      const stB = safeStat(baseAbs);
+      if (!stB || !stB.isDirectory()) continue;
+      const re = globToRegExp(ts);
+      for (const f of walkFiles(baseAbs)) {
+        const r = relative(root, f);
+        if (re.test(pathKey(r))) add(r, f);
+      }
+      continue;
+    }
+    const p = join(root, ts);
+    const st = safeStat(p);
+    if (!st) continue;
+    if (st.isFile()) add(ts, p);
+    else if (st.isDirectory()) for (const f of walkFiles(p)) add(relative(root, f), f);
+  }
+  if (!set.size || set.size > 5000) return null;
+  const h = createHash("sha1");
+  for (const k of [...set.keys()].sort()) {
+    h.update(k);
+    h.update("\0");
+    try {
+      h.update(readFileSync(set.get(k)));
+    } catch {
+      h.update("?");
+    }
+    h.update("\0");
+  }
+  return h.digest("hex").slice(0, 16);
 }
 
 // Atomic write: tmp + rename with retry (Windows/AV) and cleanup.

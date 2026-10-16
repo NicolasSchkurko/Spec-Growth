@@ -1,4 +1,9 @@
 #!/bin/sh
 # Spec Growth — static gate on every commit (seconds).
-# Installed by the spec-growth skill's INIT (copied to .git/hooks/pre-commit).
-node scripts/gates/gate-check.mjs || exit 1
+# On a change/<id> branch it is scoped to that change (errors of other active
+# changes do not block the commit); anywhere else it runs global.
+BR=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+case "$BR" in
+  change/*) node scripts/gates/gate-check.mjs --scope "${BR#change/}" || exit 1 ;;
+  *) node scripts/gates/gate-check.mjs || exit 1 ;;
+esac

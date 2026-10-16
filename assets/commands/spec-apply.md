@@ -12,6 +12,8 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ap
 - **Open decisions**: if there are unresolved `open_decisions`, warn that the change cannot reach `verified` until they are resolved (you may implement; closure stays pending).
 - **⚔ Conflicts**: if the change has unapproved `conflicts`, you may implement, but it will not reach `verified` (and `--pre-archive` blocks it) until the human approves the reversal (remove the entry + ADR).
 
+**Failure protocol (mid-apply)**: if the approach proves unviable (incompatible API, breaks unrelated tests, wrong reading of a requirement) → **STOP**; do not keep patching over a broken attempt. Restore a clean state (`git restore .` or discard the uncommitted work), set `.openspec.yaml` back to `accepted` (or `blocked` + `reason` if it needs a decision), report what failed and why, and retry in a fresh session with a revised plan. Never leave the tree half-done.
+
 **Execution:**
 1. `git checkout -b change/<id>` (continue on it if it already exists). When committing, update `gitref` in `.openspec.yaml` to the **branch tip** (`git rev-parse --short HEAD`) — this is what `--pre-archive` verifies against **HEAD** (squash-merge: use `merged_as: <squash commit sha>`).
 2. Implement `tasks.md` task by task. Write the tests for each missing `[@test]`. If the project uses **requirement IDs**, cite what you cover in tests/code: `@cita REQ-…` (a citation to a nonexistent ID is a gate error — hallucination detector).

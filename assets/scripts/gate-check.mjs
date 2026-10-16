@@ -272,8 +272,17 @@ for (const c of changes) {
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   const fp = join(c.dir, "findings.md");
-  if (existsSync(fp) && /^- \[ \]/m.test(lib.readText(fp))) {
+  if (existsSync(fp) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(fp))) {
     warn(`${c.id}: open findings in findings.md`, [c.id]);
+  }
+}
+
+// 9b) open tasks from the checklist
+for (const c of changes) {
+  if (!["applying", "verified"].includes(c.status)) continue;
+  const tp = join(c.dir, "tasks.md");
+  if (existsSync(tp) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(tp))) {
+    warn(`${c.id}: open tasks in tasks.md`, [c.id]);
   }
 }
 
@@ -310,10 +319,14 @@ for (const c of changes) {
 const adrApproves = (dec, id) => {
   const esc = String(id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const reId = new RegExp(`(?:^|[^A-Za-z0-9_-])${esc}(?![A-Za-z0-9_-])`);
-  return dec
-    .split(/\r?\n/)
-    .filter((l) => reId.test(l))
-    .some((l) => /aprob|approv/i.test(l) && !/rechaz|reject/i.test(l));
+  // Section-aware: id and approval verb may live on different lines (heading +
+  // decision line) as long as they share the `## ...` section.
+  return dec.split(/\r?\n(?=##\s)/).some((block) => {
+    if (!reId.test(block)) return false;
+    return block
+      .split(/\r?\n/)
+      .some((l) => /aprob|approv/i.test(l) && !/rechaz|reject/i.test(l));
+  });
 };
 for (const c of changes) {
   if (!c.human_approved) continue;
@@ -395,6 +408,15 @@ if (diffBase) {
         if (!o.human_approved) err(`--diff: ${o.id} touches a protected file without approval → ${f} (zone ${z.glob})`, [o.id]);
       }
     }
+    for (const f of changed) {
+      if (lib.matchZones(f, cfg.protectedZones)) continue;
+      const k = lib.pathKey(f);
+      if (k.startsWith("openspec/")) continue;
+      const ext = k.slice(k.lastIndexOf("."));
+      if (!lib.CODE_EXTS.has(ext)) continue;
+      const owners = changes.filter((c) => !TERMINAL.includes(c.status) && c.targets.some((t) => lib.pathCoveredBy(f, t)));
+      if (!owners.length) warn(`--diff: changed file not claimed by any active change → ${f} (scope drift?)`);
+    }
   }
 }
 
@@ -413,12 +435,21 @@ if (diffBase) {
       for (const id of lib.arr(fm.provides)) pushCap(id, c.id, relative(root, f), c.status);
     }
   }
+  const capPathOf = (p) => {
+    const m = String(p).replace(/\\/g, "/").match(/specs\/(.+)\/spec\.md$/);
+    return m ? m[1] : null;
+  };
   for (const [id, entries] of caps) {
     const living = entries.filter((e) => e.source === "living");
     const deltas = entries.filter((e) => e.source !== "living");
     if (living.length > 1) err(`duplicate capability ${id} (living specs): ${living.map((e) => e.path).join(" · ")}`);
     for (const d of deltas) {
       if (!living.length) continue;
+      const sameOwner = living.some((e) => capPathOf(e.path) && capPathOf(e.path) === capPathOf(d.path));
+      if (sameOwner) {
+        warn(`${d.source}: capability ${id} re-declared in the delta — remove 'provides' (the living spec owns it)`, [d.source]);
+        continue;
+      }
       const msg = `duplicate capability ${id}: delta from '${d.source}' vs living spec (${d.path})`;
       if (ADVANCED.includes(d.status)) err(msg, [d.source]);
       else warn(msg, [d.source]);
@@ -473,10 +504,25 @@ const allIds = new Set([
   ...changes.filter((c) => ADVANCED.includes(c.status)).flatMap((c) => [...(changeIds.get(c.id) || new Map()).keys()]),
 ]);
 for (const c of changes) {
-  // Citations: change files; a directory target expands to its code files.
+  // Citations: change files; directories and glob targets expand to their code files.
   const files = [];
   for (const t of [...c.targets, ...c.tests]) {
-    const p = normalize(join(root, t));
+    const ts = String(t);
+    if (/[*?]/.test(ts)) {
+      const base = ts.slice(0, ts.search(/[*?]/)).replace(/[\\/]+$/, "");
+      if (!base) continue; // global pattern: not scannable
+      const reT = lib.globToRegExp(ts);
+      const baseAbs = normalize(join(root, base));
+      let cand = [];
+      try {
+        if (existsSync(baseAbs) && statSync(baseAbs).isDirectory()) cand = lib.walkFiles(baseAbs);
+      } catch {
+        cand = [];
+      }
+      for (const f of cand) if (reT.test(lib.pathKey(relative(root, f)))) files.push(f);
+      continue;
+    }
+    const p = normalize(join(root, ts));
     if (!existsSync(p)) continue;
     let st;
     try {
@@ -488,7 +534,7 @@ for (const c of changes) {
     else if (st.isDirectory()) files.push(...lib.walkFiles(p));
   }
   const cites = [];
-  for (const f of files) cites.push(...lib.citationsIn(lib.readText(f)));
+  for (const f of [...new Set(files)]) cites.push(...lib.citationsIn(lib.readText(f)));
   for (const id of cites) {
     if (!allIds.has(id)) {
       const msg = `${c.id}: broken citation @cita ${id} — no such requirement (possible hallucination)`;
@@ -621,16 +667,33 @@ function targetStaleness(c) {
   staleMemo.set(c.id, res);
   return res;
 }
+const fpMemo = new Map();
+function currentFp(c) {
+  if (!fpMemo.has(c.id)) fpMemo.set(c.id, lib.targetsFingerprint(root, [...c.targets, ...c.tests]));
+  return fpMemo.get(c.id);
+}
+// Freshness: content fingerprint first (survives commit-after-green, catches
+// uncommitted edits); timestamps only as fallback (legacy evidence / unexpandable targets).
+function evidenceStaleReason(c, green) {
+  const fp = currentFp(c);
+  if (green.files_hash && fp) {
+    return green.files_hash === fp ? null : "code changed after the last green run";
+  }
+  const st = targetStaleness(c);
+  if (st.allNull) return "freshness not verifiable (git absent/shallow)";
+  if (st.maxTs && st.maxTs > Date.parse(green.at)) return "code changed after the last green run";
+  return null;
+}
 // Green: only from a real run (--run-tests without substitution), green and error-free for the change.
-// If the previous green is still valid for the current state, it is kept (not refreshed).
+// If the previously tested content is identical, the previous green is kept (not refreshed).
 function mergedGreen(c) {
   const prevGreen =
     (prevEvidence && prevEvidence.changes && prevEvidence.changes[c.id] && prevEvidence.changes[c.id].green_tests) || null;
   const freshOk = testsRecord && !testsRecord.substituted && testsRecord.exit === 0 && currentOk(c);
   if (freshOk) {
-    const st = targetStaleness(c);
-    if (prevGreen && !(st.maxTs && st.maxTs > Date.parse(prevGreen.at))) return prevGreen;
-    return { at: now, ok: true, mode: "tests" };
+    const fp = currentFp(c);
+    if (prevGreen && fp && prevGreen.files_hash === fp) return prevGreen;
+    return { at: now, ok: true, mode: "tests", files_hash: fp || null };
   }
   return prevGreen;
 }
@@ -644,10 +707,11 @@ for (const c of changes) {
     else warn(`${msg} (in static mode it's a warning; in pre-archive it's an error)`, [c.id]);
     continue;
   }
-  const st = targetStaleness(c);
-  if (st.allNull) warn(`${c.id}: evidence freshness not verifiable (git absent/shallow)`, [c.id]);
-  else if (st.maxTs && st.maxTs > Date.parse(green.at)) {
-    warn(`${c.id}: STALE evidence (code changed after the last green run)`, [c.id]);
+  const reason = evidenceStaleReason(c, green);
+  if (reason === "freshness not verifiable (git absent/shallow)") {
+    warn(`${c.id}: evidence freshness not verifiable (git absent/shallow)`, [c.id]);
+  } else if (reason) {
+    warn(`${c.id}: STALE evidence (${reason})`, [c.id]);
   }
 }
 
@@ -663,24 +727,33 @@ if (preArchiveId) {
     if (blockingW.length) err(`pre-archive ${c.id}: ${blockingW.length} blocking waiver(s) (requested/expired)`, [c.id]);
     if (c.open_decisions.length) err(`pre-archive ${c.id}: ${c.open_decisions.length} pending decision(s)`, [c.id]);
     if (c.conflicts.length) err(`pre-archive ${c.id}: ${c.conflicts.length} unapproved conflict(s)`, [c.id]);
+    if (c.kind === "architecture") warn(`pre-archive ${c.id}: kind architecture — did /diagram-sync run? (ARCHITECTURE.dsl)`, [c.id]);
     const findingsPath = join(c.dir, "findings.md");
-    if (existsSync(findingsPath) && /^- \[ \]/m.test(lib.readText(findingsPath))) {
+    if (existsSync(findingsPath) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(findingsPath))) {
       warn(`pre-archive ${c.id}: open findings in findings.md (did you resolve them?)`, [c.id]);
+    }
+    const tasksPath = join(c.dir, "tasks.md");
+    if (existsSync(tasksPath) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(tasksPath))) {
+      warn(`pre-archive ${c.id}: open tasks in tasks.md (did you finish them?)`, [c.id]);
     }
     const green = mergedGreen(c);
     if (c.status === "verified") {
       if (!green) {
         err(`pre-archive ${c.id}: no green evidence — run 'gate-check --run-tests' before archiving`, [c.id]);
       } else {
-        const st = targetStaleness(c);
-        if (st.maxTs && st.maxTs > Date.parse(green.at)) {
-          err(`pre-archive ${c.id}: STALE green evidence — re-run 'gate-check --run-tests' before archiving`, [c.id]);
+        const reason = evidenceStaleReason(c, green);
+        if (reason === "code changed after the last green run") {
+          err(`pre-archive ${c.id}: STALE green evidence (${reason}) — re-run 'gate-check --run-tests' before archiving`, [c.id]);
         }
       }
     }
     const refCandidate = c.merged_as || c.gitref;
     if (!refCandidate) {
-      warn(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable`, [c.id]);
+      if (lib.gitHead(root)) {
+        err(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable (set gitref; after squash-merge: merged_as)`, [c.id]);
+      } else {
+        warn(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable (no git)`, [c.id]);
+      }
     } else {
       const anc = lib.gitIsAncestor(root, refCandidate);
       if (anc === true) {
