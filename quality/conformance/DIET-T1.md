@@ -50,3 +50,17 @@
 ## Verdict
 
 Point 1 (baseline → diet → equal-or-better) is **closed**: behavior equal or better on every anchor task (t5 judge as the only watch item, significance-limited), tokens down on the heavy tasks and −17% overall. The per-request savings are real but bounded; the structural win (context economy of the operator session) is the **restructure phase**: skill router + `references/`, thin commands, and subagent routing for `gate`/`diagram-sync` with cheap models.
+
+## Restructure v1.2 — validation (same frozen suite)
+
+| Task | Baseline | Diet t1 | **v1.2** |
+|---|---|---|---|
+| `t1-add` | 5/5 · j5/5 | 5/5 · j5/5 | **5/5 · j5/5** |
+| `t2-quickfix` | 3/5 | 9/10 | **5/5 (new runs) · 10/10 combined** |
+| `t3-apply` | 3/3 | 3/3 | **3/3** |
+| `t4-archive` | 5/5 · j5/5 | 5/5 · j5/5 | **5/5 · j5/5** |
+| `t5-explain` | 3/3 · j3/3 | cit 6/6 · j4/6 | cit 3/3 · **j2/3** (same watch) |
+
+Tokens per run (means, vs baseline): `t1` 534k (**−34%**) · `t2` 456k (**−64%**) · `t3` 1.02M (**−49%**) · `t4` 252k (−16%) · `t5` 69k (−12%).
+
+Verdict: **equal-or-better** behaviorally with the largest token wins so far — the heavy `t3-apply` nearly halved; `t2` reached a clean 5/5. `t5` judge remains the single watch item (score-4 minor imprecisions on longer answers; mechanical citations 100%). Synthesized-run caveats: the aggregate table for `t2`/`t5` mixes new v1.2 runs with same-day diet runs where the batch did not overwrite (run counts above separate them).
