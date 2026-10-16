@@ -1,6 +1,6 @@
 ---
 name: Spec Growth
-description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage changes, apply with tests and evidence, verify (adversarial pass + teach-back), gate, archive, resolve blockers, explain existing behavior, diagram sync (spec-* commands).'
+description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-gate · spec-resolve · diagram-sync).'
 ---
 
 # Spec Growth

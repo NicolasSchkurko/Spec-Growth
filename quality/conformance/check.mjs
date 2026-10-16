@@ -156,12 +156,17 @@ export async function checkRun({ task, runDir, runBase }) {
     const seen = new Set();
     let m;
     while ((m = re.exec(transcript))) {
-      const rel = m[1]
+      const rel0 = m[1]
         .replace(/\\/g, "/")
         .replace(/^\.\//, "")
         .replace(/^.*?(src\/)/, "$1");
+      // v1.1.1: resolve short-form citations too (monotonic — only accepts files that exist)
+      const candidates = rel0.includes("/")
+        ? [rel0]
+        : [rel0, `src/${rel0}`, `tests/${rel0}`, `app/${rel0}`];
+      const rel = candidates.find((c) => existsSync(join(runDir, c)));
+      if (!rel) continue;
       const abs = join(runDir, rel);
-      if (!existsSync(abs)) continue;
       const lines = (readMaybe(abs) || "").split(/\r?\n/).length;
       if (Number(m[2]) >= 1 && Number(m[2]) <= lines) seen.add(`${rel}:${m[2]}`);
     }
