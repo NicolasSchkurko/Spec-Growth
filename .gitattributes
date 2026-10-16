@@ -1,0 +1,2 @@
+# Line endings: normalizar en el repo; LF estable para todo lo que se ejecuta o se copia a hooks
+* text=auto eol=lf
