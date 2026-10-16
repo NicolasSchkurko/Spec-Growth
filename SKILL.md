@@ -1,6 +1,6 @@
 ---
 name: Spec Growth
-description: Bootstraps and operates the Spec Growth system (spec-driven, spec-anchored) in a repository. Full bootstrap — OpenSpec, the codebase-memory and Structurizr MCPs when missing, its own spec-anchored schema, specs/changes folders, generated BOARD.md, DECISIONS.md, waivers, protected zones, capabilities, evidence, gates, tech briefs (walkthrough + comprehension sign-off) — and defines the commands spec-add, spec-triage, spec-apply, spec-verify, spec-explain, spec-gate, spec-resolve and diagram-sync. Use when the user asks to "iniciar Spec Growth", "montar el sistema de specs en este repo", bootstrap spec-driven, "Spec Growth Engine", manage changes/decisions with specs, or create/apply/verify specs.
+description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage changes, apply with tests and evidence, verify (adversarial pass + teach-back), gate, archive, resolve blockers, explain existing behavior, diagram sync (spec-* commands).'
 ---
 
 # Spec Growth
