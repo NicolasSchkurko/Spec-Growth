@@ -128,6 +128,7 @@ const drafts = [];
 const blocked = [];
 const invalid = [];
 const openWaivers = [];
+const pendingComprehension = [];
 for (const c of changes) {
   const hits = new Map();
   for (const t of c.targets) {
@@ -150,6 +151,13 @@ for (const c of changes) {
   else if (ADVANCED.includes(c.status)) inProgress.push(c);
   else if (c.status === "draft") drafts.push(c);
   else if (["blocked", "rejected", "superseded"].includes(c.status)) blocked.push(c);
+}
+for (const c of changes) {
+  if (!c.tech_brief || TERMINAL.includes(c.status) || !["applying", "verified"].includes(c.status)) continue;
+  const wp = join(c.dir, "walkthrough.md");
+  const has = existsSync(wp);
+  const todo = has ? /TODO\(human\)/i.test(lib.readText(wp)) : false;
+  if (!has || !(c.understood_by && c.understood_at)) pendingComprehension.push({ c, has, todo });
 }
 
 const fmt = (iso) =>
@@ -217,6 +225,21 @@ md += openWaivers.length
       .map(({ c, w }) => `- **${c.id}** — ${w.type || "?"} (${w.state || "?"}${w.expires ? `, expires ${w.expires}` : ""}): ${w.reason || "no reason"}`)
       .join("\n")
   : "_(none)_";
+md += `\n\n## 🧠 Awaiting your comprehension (tech brief)\n\n`;
+md += pendingComprehension.length
+  ? pendingComprehension
+      .map(
+        ({ c, has, todo }) =>
+          `- **${c.id}** (${c.status}) — ${
+            !has
+              ? "walkthrough not written yet"
+              : todo
+                ? "walkthrough ready — answers pending (`/spec-verify`)"
+                : "walkthrough ready — sign-off pending (`/spec-verify`)"
+          }`
+      )
+      .join("\n")
+  : "_(nothing pending)_";
 if (invalid.length) {
   md += `\n\n## ⚠ Invalid state (fix .openspec.yaml)\n\n`;
   md += invalid.map((c) => `- **${c.id}** — status: \`${c.status}\``).join("\n");
@@ -280,6 +303,7 @@ const board = {
     pending_decisions: pendingDecision.map(({ c }) => c.id),
     pending_conflicts: pendingConflict.map(({ c, cf }) => ({ change: c.id, with: cf.with, what: cf.what })),
     open_waivers: openWaivers.map(({ c, w }) => ({ change: c.id, type: w.type, state: w.state })),
+    pending_comprehension: pendingComprehension.map(({ c }) => c.id),
     invalid_status: invalid.map((c) => c.id),
   },
   warnings,
@@ -289,6 +313,7 @@ lib.writeAtomic(join(root, "openspec", "board.json"), JSON.stringify(board, null
 console.log(
   `BOARD.md + openspec/board.json regenerated · ${changes.length} active · ${archived.length} archived · ` +
     `${pendingApproval.length} approval(s) · ${pendingDecision.length} decision(s) · ${pendingConflict.length} conflict(s) · ${openWaivers.length} open waiver(s)` +
+    (pendingComprehension.length ? ` · 🧠 ${pendingComprehension.length} comprehension pending` : "") +
     (invalid.length ? ` · ⚠ ${invalid.length} invalid state(s)` : "")
 );
 if (warnings.length) console.log(`⚠ ${warnings.length} warning(s) — see BOARD.md`);

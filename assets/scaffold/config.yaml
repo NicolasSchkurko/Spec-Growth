@@ -11,6 +11,7 @@ rules:
   proposal:
     - Declare kind (fix|feature|architecture|refactor), targets, tests and deps in .openspec.yaml
     - Short: why and what. The how goes in design.md, only if kind=architecture
+    - Persistence/state, concurrency, networking, platform SDKs, security or a new dependency → tech_brief: true → walkthrough + comprehension sign-off before archiving
   specs:
     - Requirements in SHALL; concrete WHEN/THEN scenarios
     - Every requirement carries a [@test] line with the path of the test verifying it

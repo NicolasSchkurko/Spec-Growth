@@ -24,7 +24,7 @@ You are operating the **Spec Growth** system in this repository (load the `spec-
    - `tasks.md`: verifiable checklist. If large, propose the **riskiest first vertical slice** (hardest-first).
    - `design.md`: ONLY if `kind: architecture`.
 
-6. **Metadata**: fill `.openspec.yaml` with `kind`, `targets`, `tests`, `deps`, `gitref: <git rev-parse --short HEAD>`; `waivers` / `open_decisions` / `conflicts` only when they apply.
+6. **Metadata**: fill `.openspec.yaml` with `kind`, `targets`, `tests`, `deps`, `gitref: <git rev-parse --short HEAD>`; `waivers` / `open_decisions` / `conflicts` only when they apply. Add `tech_brief: true` when the change touches **persistence/state, concurrency, networking, platform SDKs, security/auth or a new dependency** — and a short **"State and persistence mechanism"** block to `proposal.md` (in plain words: where and how the data will live, reusing what already exists). The brief is approved with the change; without it the change cannot be archived.
 
 7. **Overlaps**: if another active change claims a shared `target`, warn and propose a plan. If you declare the **dependency** (`deps`), the gate treats the overlap as **sequenced** (warning, not error); if independent, sequence them or replan.
 
@@ -32,4 +32,4 @@ You are operating the **Spec Growth** system in this repository (load the `spec-
 
 9. **Final summary**: id, kind, capabilities, targets, protected zones affected (if any), open decisions (if any), expected outcome, alternatives considered (if any), and that it stays `status: draft` awaiting **human approval** (on approval: `status: accepted` + `accepted_by` + `accepted_at`).
 
-Rules: one change per idea; no code here; `[@test]` mandatory for `kind: fix`/`refactor`; alternatives mandatory when the request carries a decision.
+Rules: one change per idea; no code here; `[@test]` mandatory for `kind: fix`/`refactor`; alternatives mandatory when the request carries a decision; `tech_brief` flagged for persistence/state, concurrency, networking, platform SDKs, security or a new dependency → walkthrough + comprehension sign-off before archiving.

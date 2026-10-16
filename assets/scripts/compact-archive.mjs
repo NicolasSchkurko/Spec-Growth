@@ -68,6 +68,14 @@ function kindOf(dir) {
   return mm ? mm[1].trim() : "?";
 }
 
+// First line of the tech brief's mechanism (kept in the digest after compaction).
+function mechanismOf(dir) {
+  const f = join(dir, "walkthrough.md");
+  if (!existsSync(f)) return null;
+  const m = lib.readText(f).match(/^##\s+Mechanism\s*\r?\n+([^\n#][^\n]*)/m);
+  return m ? m[1].trim().slice(0, 160) : null;
+}
+
 function committedCheck(relDir) {
   try {
     const out = execFileSync("git", ["log", "-1", "--format=%H", "--", relDir], {
@@ -103,7 +111,9 @@ for (const c of candidates) {
     console.log(`  ⚠ --force: ${c.name} — deletion without git verification (irreversible)`);
   }
   const id = c.name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
-  const line = `- ${c.name.slice(0, 10)} · ${id} · ${kindOf(c.dir)}`;
+  const mech = mechanismOf(c.dir);
+  let line = `- ${c.name.slice(0, 10)} · ${id} · ${kindOf(c.dir)}`;
+  if (mech) line += `\n  - mechanism: ${mech}`;
   if (!plan.has(c.year)) plan.set(c.year, []);
   plan.get(c.year).push(line);
 }
@@ -116,7 +126,10 @@ let appended = 0;
 for (const [year, lines] of plan) {
   const digest = join(archiveDir, `${year}.md`);
   const existing = existsSync(digest) ? readFileSync(digest, "utf8") : "";
-  const fresh = lines.filter((l) => !existing.includes(l));
+  const fresh = lines.filter((l) => {
+    const m = l.match(/·\s+([^\s·]+)\s+·/);
+    return m ? !existing.includes(`· ${m[1]} ·`) : !existing.includes(l);
+  });
   console.log(`→ archive/${year}.md (+${fresh.length} new, ${lines.length - fresh.length} already present)`);
   if (!apply) continue;
   const header = `# Archive ${year}\n\nCompacted changes — full text in git history.\n\n`;
