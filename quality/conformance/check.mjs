@@ -113,11 +113,12 @@ export async function checkRun({ task, runDir, runBase }) {
       c ? `gitref=${c.gitref}` : ""
     );
     const ev = L.readEvidence(runDir);
+    const green = ev?.changes?.[id]?.green_tests || null;
     add("t3.evidence", Boolean(ev), ev ? `gate_ok=${ev.gate_ok}` : "missing openspec/evidence.json");
     add(
       "t3.verified-honest",
-      c ? (c.status === "verified" ? Boolean(ev && ev.gate_ok === true) : true) : false,
-      c ? `status=${c.status} gate_ok=${ev ? ev.gate_ok : "n/a"}` : ""
+      c ? (c.status === "verified" ? Boolean(green && green.ok === true) : true) : false,
+      c ? `status=${c.status} green_tests=${green ? green.ok : "none"}` : ""
     );
     const refs = c
       ? L.walkMd(join(runDir, "openspec", "changes", id, "specs")).flatMap((f) => L.testRefsIn(f))

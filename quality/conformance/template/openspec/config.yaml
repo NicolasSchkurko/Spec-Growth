@@ -1,7 +1,7 @@
 schema: spec-anchored
 
 # Project test command. Used by `gate-check --run-tests` to record real evidence.
-test_command: "node --test tests/"
+test_command: "node --test"
 
 context: |
   Fixture repo for Spec Growth conformance runs — a tiny note-taking app in Node.js.
