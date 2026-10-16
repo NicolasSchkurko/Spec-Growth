@@ -96,7 +96,7 @@ Detailed docs live in [`docs/`](docs/README.md), with diagrams:
 
 ## Evidence & limits
 
-Part of this system is research-backed, and it says which part: the v1.0 comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — with explicit caveats (predominantly novice populations; mechanisms transfer, effect sizes do not). The rest is engineering practice from adversarial audit rounds (v0.5 → v1.0). Full map and the consolidated known limits: [docs/evidence.md](docs/evidence.md).
+This system is research-backed, and it says how: the core architecture follows **The Spec Growth Engine** (Grabowski, [arXiv:2606.27045](https://arxiv.org/abs/2606.27045)); the v1.0 comprehension mechanisms map to GenAI-SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring; and there is direct 2026 empirical support (spec-driven test generation, external checklists > self-checks). The page also records the critiques the approach attracts — waterfall risk, output-vs-outcome, determinism — and the consolidated known limits: [docs/evidence.md](docs/evidence.md).
 
 ## Status
 
