@@ -46,11 +46,12 @@ You do not have to edit files by hand: say "approved" to the agent in any sessio
 | Approval | Where | Exact record |
 |---|---|---|
 | **Accept a change** (`draft → accepted`) | `.openspec.yaml` | `status: accepted` + `accepted_by: "<name>"` + `accepted_at: "<date>"` |
-| **Protected zone** | `.openspec.yaml` + `DECISIONS.md` | `human_approved: true` + a line in `DECISIONS.md` containing `approved` (or `aprobado`) and the change id as a standalone word — and no `rejected`/`rechazado` in that line |
+| **Protected zone** | `.openspec.yaml` + `DECISIONS.md` | `human_approved: true` + an approval entry in `DECISIONS.md`: the change id and the approval word (`approved`/`aprobado`) in the same `##` section (id in the heading, approval below, is the normal shape); `rejected`/`not approved` never counts |
 | **Grant a waiver** | `.openspec.yaml` | `state: granted` + `owner: "<name>"` + `expires: "YYYY-MM-DD"` (the date is yours; the agent asks for it) |
 | **Reject a waiver** | `.openspec.yaml` | remove the waiver entry |
 | **Resolve a decision** | `.openspec.yaml` + `DECISIONS.md` | remove the `open_decisions` entry + an ADR entry documenting the answer |
 | **Approve a conflict ⚔** | `.openspec.yaml` + `DECISIONS.md` | remove the `conflicts` entry + an ADR entry documenting the reversal (which previous decision is replaced, and why) |
+| **Comprehension sign-off** (tech briefs) | `walkthrough.md` + `.openspec.yaml` | answer the 3 questions in `/spec-verify` (free recall) → the agent transcribes your answers + records `understood_by` + `understood_at` |
 | **Reject a change** | `.openspec.yaml` | `status: rejected` + `reason: "…"` |
 | **Supersede a change** | `.openspec.yaml` | `status: superseded` + `superseded_by: "<new-id>"` |
 
@@ -82,7 +83,7 @@ human_approved: true
 - **Refs:** openspec/changes/dark-mode/.openspec.yaml
 ```
 
-The gate accepts a line that contains an approval word (`approved`, `aprobado`) and the change id (here `dark-mode`) as a **standalone word**, and rejects lines that also say `rejected`/`rechazado`. Mentioning `dark-mode-extra` does not count for `dark-mode`.
+The gate looks inside each `##` section: if the heading mentions the change id (`dark-mode`), any approval line in that section counts — so the shape above works. Without a heading, the id and the approval word must share the same line. Negations (`rejected`, `not approved`, `disapproved`) never count, and mentioning `dark-mode-extra` does not count for `dark-mode`.
 
 ## What awaits you
 
@@ -90,8 +91,11 @@ The gate accepts a line that contains an approval word (`approved`, `aprobado`) 
 
 - 🔒 Awaiting your approval (protected zones)
 - ⏸ Awaiting your decision (open decisions and ⚔ conflicts)
+- 🧠 Awaiting your comprehension (tech briefs: walkthrough ready, sign-off pending)
 - In progress · Drafts · Blocked / rejected
 - ⚠ Registered waivers (pending and in force)
+- Capabilities (living specs, with ARCHITECTURE.dsl tag status)
+- Dependency graph (declared deps)
 - Archive + warnings
 
 Regenerate it any time with `node scripts/gates/build-board.mjs`, or run `/spec-resolve` to be walked through each item.

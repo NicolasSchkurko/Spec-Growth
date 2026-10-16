@@ -38,6 +38,9 @@ conflicts: []                  # see Conflicts
 # human_approved: true         # only for protected zones, after explicit human approval + ADR
 # accepted_by: "Nicolas"       # recorded when the human accepts the change
 # accepted_at: "2026-10-16"
+# tech_brief: true             # persistence/state/concurrency/network/SDK/security/new dep → walkthrough + comprehension sign-off
+# understood_by: "Nicolas"     # recorded after the /spec-verify teach-back
+# understood_at: "2026-10-16"
 ```
 
 > Custom metadata keys are accepted both bare (`kind`) and `x-`-prefixed (`x-kind`). OpenSpec ≥ 1.14 strict validation recommends the prefix for custom keys; the gate reads both forms.
@@ -47,8 +50,14 @@ conflicts: []                  # see Conflicts
 `verified` is not a claim; it is a record. `gate-check --run-tests` executes the project's `test_command` and stores a `green_tests` entry per change in `openspec/evidence.json` — local, git-ignored, **never committed**. Green is recorded only for changes with no gate errors.
 
 - Green only comes from a real run. `--tests-command` runs in **substituted** mode and never produces green.
-- Evidence goes **stale** when the change's `targets` or `tests` receive new commits after the recorded run. Stale green is a warning in static mode and an error before archiving.
+- Evidence goes **stale** when the content of the change's `targets` or `tests` changes after the recorded run — even an uncommitted edit. Committing right after a green run does **not** stale it: freshness is a **content fingerprint** (timestamps are only the fallback). Stale green is a warning in static mode and an error before archiving.
 - Evidence is per-clone: it is a local signal; the barrier that counts is CI running `--run-tests`.
+
+## Tech brief (comprehension)
+
+Changes that touch persistence/state, concurrency, networking, platform SDKs, security or a new dependency declare `tech_brief: true`. At apply, the agent writes `walkthrough.md` — mechanism step by step, physical traceability (where the data lives), limits and failure modes, touched APIs, implicit decisions — plus 3 change-specific questions. In `/spec-verify` you answer them in your own words (free recall; the agent validates against the code and corrects misconceptions, max 2 rounds). The sign-off is your answers transcribed + `understood_by`/`understood_at`.
+
+Missing or incomplete brief/sign-off: warning; error before archiving. A valid `comprehension-debt` waiver excuses the missing sign-off (the walkthrough itself is still required). The gate verifies the ritual — the value is the teach-back conversation.
 
 ## Waivers
 
@@ -56,7 +65,7 @@ A registered permission to deviate from a rule. The agent can only *request*; **
 
 | Field | Notes |
 |---|---|
-| `type` | `known-gap` · `deferred-test` · `pending-external-evidence` · `frontier-stub` |
+| `type` | `known-gap` · `deferred-test` · `pending-external-evidence` · `frontier-stub` · `comprehension-debt` |
 | `state` | `requested` (pending — blocks `verified`) or `granted` |
 | `owner` | Who granted it (required when `granted`) |
 | `expires` | Mandatory date (required when `granted`); the expiry is its closure |
@@ -84,11 +93,11 @@ protected:
     reason: "persistence — user data"
 ```
 
-Touching one requires `human_approved: true` **plus** an approval line in `DECISIONS.md` that mentions the change id as a word (the flag alone is not enough — the gate cross-checks both). The check runs over the declared `targets` **and** over real changed files (working tree, staged, untracked).
+Touching one requires `human_approved: true` **plus** an approval entry in `DECISIONS.md`: the change id and the approval word (`approved`/`aprobado`) in the same `##` section — the id is normally in the heading with the approval below; a `rejected`/`not approved` line does not count (the flag alone is not enough — the gate cross-checks both). The check runs over the declared `targets` **and** over real changed files (working tree, staged, untracked).
 
 ## Capabilities
 
-Reusable units declared in the owning spec's frontmatter: `provides: [cap:x]`. Exactly one owner; duplicates are a gate error. Before building something new, search the registry (`openspec/board.json`) and reuse.
+A capability is the `openspec/specs/<capability>/` folder — id `cap:<capability>`; the optional frontmatter `provides: [cap:x]` aliases it. Exactly one owner: duplicates are a gate error once the change advances (a draft only warns), and two active changes cannot create the same new capability. Components in `ARCHITECTURE.dsl` carry the tag `cap:<capability>`; the gate checks the mapping in both directions (an untagged capability → run `/diagram-sync`; a tag with no capability → stale). The BOARD shows the registry in its **Capabilities** section.
 
 ## Requirement IDs and citations (optional)
 
@@ -98,9 +107,11 @@ Specs may carry stable IDs — `[REQ-<capability>-<n>]` — and code/tests may c
 
 | Data | Source | Seen by |
 |---|---|---|
-| Status, targets, tests, deps, waivers, decisions, conflicts, approval | the change's `.openspec.yaml` | machine (gates) |
+| Status, targets, tests, deps, waivers, decisions, conflicts, approval, tech brief flags | the change's `.openspec.yaml` | machine (gates) |
 | Protected zones | `openspec/config.yaml` → `protected:` | human |
-| Capabilities | spec frontmatter (`provides:`) | machine |
+| Capabilities | spec folder (+ optional `provides:`) · `cap:` tags in `ARCHITECTURE.dsl` | machine + human |
+| Walkthrough (tech brief) | `changes/<id>/walkthrough.md` + sign-off keys | human |
+| Mechanism notes | `docs/mechanisms/` (from `/spec-explain`) | human |
 | Evidence | `openspec/evidence.json` (generated) | machine |
 | Board | `BOARD.md` (generated) | human |
 | Machine index | `openspec/board.json` (generated) | machine |

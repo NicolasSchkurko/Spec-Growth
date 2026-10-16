@@ -10,7 +10,13 @@ Not normally — the agent writes it when you approve. A plain accept needs no A
 `verified` is earned by a green `gate-check --run-tests` run. In static mode (pre-commit) the missing green is only a warning; before archiving it is an error. Run `--run-tests`.
 
 **Why does it say my green evidence is STALE?**
-The change's `targets` or `tests` received commits after the last recorded green run. Re-run `gate-check --run-tests`.
+The content of the change's `targets` or `tests` changed after the last recorded green run — even an uncommitted edit. Committing the already-tested code does **not** stale it (freshness is a content fingerprint; timestamps are only the fallback). Re-run `gate-check --run-tests`.
+
+**What is `walkthrough.md`, and what happens if I don't understand a change?**
+Changes that touch persistence/state, concurrency, networking, platform SDKs, security or add a dependency are flagged `tech_brief: true`: the agent explains the mechanism in the change's `walkthrough.md`, and `/spec-verify` walks you through 3 questions in your own words (teach-back — the agent validates against the code and corrects you; max 2 rounds). The gate warns until the sign-off; before archiving it is an error — or you grant a `comprehension-debt` waiver (owner + expiry) if you consciously accept the debt.
+
+**Why does it warn "capability X is not tagged in ARCHITECTURE.dsl"?**
+A living capability (a spec folder, `cap:<capability>`) is realized by no component of the C4 model. Run `/diagram-sync` to tag the components that implement it; the reverse warning means a tag references a capability that no longer exists (stale).
 
 **Can I commit with a red gate?**
 The pre-commit hook blocks it. If the reds are from *other* changes, use `--scope <id>` for your local commit — it downgrades foreign reds to warnings **in the report only** (the evidence stays honest). CI always runs unscoped.
@@ -28,7 +34,7 @@ A **decision request** asks for something **not yet decided** (beyond the agent'
 It is allowed, but the gate warns when a granted waiver has more than 180 days of validity, and expired waivers inside `archive/` are reported. A waiver is a dated debt, not a permanent exemption.
 
 **How do I see everything that awaits me right now?**
-`BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · in progress · drafts · waivers · blocked · archive · warnings.
+`BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · 🧠 comprehension sign-offs · in progress · drafts · waivers · Capabilities · Dependency graph · blocked · archive · warnings.
 
 **Do the docs go stale?**
 The system's own honesty rule applies to itself: `SKILL.md` carries the implementation-status section, and if a script changes, the skill and these documents are updated together.

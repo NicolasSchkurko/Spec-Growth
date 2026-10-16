@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Spec Growth — compacts openspec/changes/archive/ (v0.9).
+// Spec Growth — compacts openspec/changes/archive/ (v1.0).
 // YYYY-MM-DD-* folders older than N days collapse into one line per change
 // in archive/YYYY.md (digest, with dedupe). With --apply, folders are deleted
 // ONLY if they are clean (no pending changes) and committed in git.
@@ -64,16 +64,21 @@ if (!candidates.length) {
 function kindOf(dir) {
   const f = join(dir, ".openspec.yaml");
   if (!existsSync(f)) return "?";
-  const mm = lib.readText(f).match(/^(?:x-)?kind:\s*(\S+)/m);
-  return mm ? mm[1].trim() : "?";
+  const mm = lib.readText(f).match(/^(?:x-)?kind:\s*([\w.-]+)/m);
+  return mm ? mm[1] : "?";
 }
 
 // First line of the tech brief's mechanism (kept in the digest after compaction).
 function mechanismOf(dir) {
   const f = join(dir, "walkthrough.md");
   if (!existsSync(f)) return null;
-  const m = lib.readText(f).match(/^##\s+Mechanism\s*\r?\n+([^\n#][^\n]*)/m);
-  return m ? m[1].trim().slice(0, 160) : null;
+  const m = lib.readText(f).match(/^##\s+Mechanism\s*\r?\n+([\s\S]*?)(?=\r?\n##\s|$)/m);
+  if (!m) return null;
+  const first = m[1]
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .find((l) => l && !l.startsWith("```"));
+  return first ? first.slice(0, 160) : null;
 }
 
 function committedCheck(relDir) {

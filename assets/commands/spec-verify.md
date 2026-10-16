@@ -13,7 +13,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ve
    - If `walkthrough.md` does not exist, say so — it is written in `/spec-apply`; do not invent it here.
    - If its `## Cognitive sign-off` still has `TODO(human)`: ask the 3 questions in the chat, one at a time, in the plainest language. The answers must be the human's own words (free recall — no multiple choice, no leading).
    - Validate each answer against the real code (cite `file:line`). Correct: transcribe it into the walkthrough. Vague or wrong: explain the actual mechanism (teach), then ask again — **max 2 rounds**.
-   - On success (the human explicitly confirms they understood): set `understood_by` + `understood_at` in `.openspec.yaml` — their sentence, your record.
+   - On success (the human explicitly confirms they understood): set the `understood_by` + `understood_at` keys in `.openspec.yaml` (repo convention: bare or `x-`) — their sentence, your record.
    - If after 2 rounds it does not land: do not fake it. Offer (a) keep it pending until understood, or (b) the human grants a `comprehension-debt` waiver (`owner` + `expires`, recorded in `DECISIONS.md`).
 4. **Never edit specs or code in this pass.** Findings become:
    - a **`requested` waiver** (with a reason) if the code consciously deviates from a rule → `.openspec.yaml`, awaiting your decision;

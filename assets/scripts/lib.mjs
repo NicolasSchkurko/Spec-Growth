@@ -211,7 +211,8 @@ const asBool = (v) => v === true || ["true", "yes", "si", "sí"].includes(String
 // the gate accepts both (the prefixed form wins if both are present).
 export const normalizeMeta = (meta) => {
   const out = {};
-  for (const k of Object.keys(meta)) out[k.startsWith("x-") ? k.slice(2) : k] = meta[k];
+  for (const k of Object.keys(meta)) if (!k.startsWith("x-")) out[k] = meta[k];
+  for (const k of Object.keys(meta)) if (k.startsWith("x-")) out[k.slice(2)] = meta[k]; // the prefixed form wins if both are present
   return out;
 };
 
@@ -292,6 +293,69 @@ export function listArchive(root) {
   return { archived, digests, digestIds };
 }
 
+// All files inside a directory (recursive), same exclusions as walkFiles.
+export function walkAll(dir, depth = 0) {
+  if (!existsSync(dir) || depth > WALK_MAX_DEPTH) return [];
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    if (WALK_EXCLUDES.has(name)) continue;
+    const p = join(dir, name);
+    let st;
+    try {
+      st = lstatSync(p);
+    } catch {
+      continue;
+    }
+    if (st.isSymbolicLink()) continue;
+    if (st.isDirectory()) out.push(...walkAll(p, depth + 1));
+    else out.push(p);
+  }
+  return out;
+}
+
+// --- tech brief (walkthrough.md) ---
+export const WALKTHROUGH_SECTIONS = [
+  ["Mechanism", /^##\s+Mechanism\b/im],
+  ["Physical traceability", /^##\s+Physical traceability\b/im],
+  ["Limits and failure modes", /^##\s+Limits and failure modes\b/im],
+  ["Touched APIs", /^##\s+Touched APIs\b/im],
+  ["Implicit decisions", /^##\s+Implicit decisions\b/im],
+];
+
+// Structural issues of the tech brief (missing or empty sections). Empty array = complete.
+export function briefIssues(dir) {
+  const wp = join(dir, "walkthrough.md");
+  if (!existsSync(wp)) return ["walkthrough.md missing"];
+  const text = readText(wp);
+  const issues = [];
+  for (const [name, re] of WALKTHROUGH_SECTIONS) {
+    const m = re.exec(text);
+    if (!m) {
+      issues.push(`'## ${name}' missing`);
+      continue;
+    }
+    const rest = text.slice(m.index + m[0].length);
+    const next = rest.search(/^##\s/m);
+    const body = (next >= 0 ? rest.slice(0, next) : rest).trim();
+    if (body.length < 40) issues.push(`'## ${name}' looks empty`);
+  }
+  if (!/^##\s+Cognitive sign-off\b/im.test(text)) issues.push("'## Cognitive sign-off' missing");
+  return issues;
+}
+
+// True when the Cognitive sign-off section still contains TODO(human) answers.
+export function signoffTodoIn(dir) {
+  const wp = join(dir, "walkthrough.md");
+  if (!existsSync(wp)) return false;
+  const text = readText(wp);
+  const m = text.match(/^##\s+Cognitive sign-off\b/im);
+  if (!m) return false;
+  const rest = text.slice(m.index + m[0].length);
+  const next = rest.search(/^##\s/m);
+  const body = next >= 0 ? rest.slice(0, next) : rest;
+  return /TODO\(human\)/i.test(body);
+}
+
 export function readConfig(root, errors = null) {
   const p = join(root, "openspec", "config.yaml");
   const errs = [];
@@ -309,7 +373,7 @@ export function listCapabilities(root) {
   const specsDir = join(root, "openspec", "specs");
   const out = [];
   for (const file of walkMd(specsDir)) {
-    const fm = readFrontmatter(file);
+    const fm = normalizeMeta(readFrontmatter(file));
     const rel = relative(root, file).replace(/\\/g, "/");
     let prov = arr(fm.provides);
     const m = rel.match(/^openspec\/specs\/(.+)\/spec\.md$/i);
@@ -388,7 +452,10 @@ export function gitLastCommitTs(root, relPath) {
   if (gitTsCache.has(key)) return gitTsCache.get(key);
   let val = null;
   try {
-    const out = execFileSync("git", ["log", "-1", "--format=%ct", "--follow", "--", relPath], {
+    const args = ["log", "-1", "--format=%ct"];
+    if (!/[*?]/.test(String(relPath))) args.push("--follow"); // --follow does not take wildcard pathspecs
+    args.push("--", relPath);
+    const out = execFileSync("git", args, {
       cwd: root,
       stdio: ["ignore", "pipe", "ignore"],
     })
@@ -412,6 +479,16 @@ export function gitHead(root) {
       .trim();
   } catch {
     return null;
+  }
+}
+
+// True when the directory is inside a git repository (works even with no commits yet).
+export function gitRepoPresent(root) {
+  try {
+    execFileSync("git", ["rev-parse", "--git-dir"], { cwd: root, stdio: ["ignore", "ignore", "ignore"] });
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -539,7 +616,7 @@ export function targetsFingerprint(root, paths) {
       const stB = safeStat(baseAbs);
       if (!stB || !stB.isDirectory()) continue;
       const re = globToRegExp(ts);
-      for (const f of walkFiles(baseAbs)) {
+      for (const f of walkAll(baseAbs)) {
         const r = relative(root, f);
         if (re.test(pathKey(r))) add(r, f);
       }
@@ -549,18 +626,26 @@ export function targetsFingerprint(root, paths) {
     const st = safeStat(p);
     if (!st) continue;
     if (st.isFile()) add(ts, p);
-    else if (st.isDirectory()) for (const f of walkFiles(p)) add(relative(root, f), f);
+    else if (st.isDirectory()) for (const f of walkAll(p)) add(relative(root, f), f);
   }
   if (!set.size || set.size > 5000) return null;
   const h = createHash("sha1");
   for (const k of [...set.keys()].sort()) {
     h.update(k);
     h.update("\0");
-    try {
-      h.update(readFileSync(set.get(k)));
-    } catch {
-      h.update("?");
+    let buf = null;
+    for (let i = 0; i < 3 && buf === null; i++) {
+      try {
+        buf = readFileSync(set.get(k));
+      } catch {
+        const until = Date.now() + 30 * (i + 1);
+        while (Date.now() < until) {
+          /* short backoff (Windows/AV locks) */
+        }
+      }
     }
+    if (buf === null) return null; // unreadable file → not evaluable (timestamps fallback)
+    h.update(buf);
     h.update("\0");
   }
   return h.digest("hex").slice(0, 16);

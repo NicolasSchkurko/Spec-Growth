@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Spec Growth — mechanical gate (v0.9).
+// Spec Growth — mechanical gate (v1.0).
 // Checks: parse · status/kind enums · reason/superseded_by · overlaps (containment+globs,
 //   severity by active work; deps-sequenced → warning) · [@test] · targets ·
 //   fix/refactor→regression · ⚔ conflicts · waivers
@@ -272,7 +272,7 @@ for (const c of changes) {
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   const fp = join(c.dir, "findings.md");
-  if (existsSync(fp) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(fp))) {
+  if (existsSync(fp) && /^\s*(?:[-*+]|\d+\.)\s+\[ \]/m.test(lib.readText(fp))) {
     warn(`${c.id}: open findings in findings.md`, [c.id]);
   }
 }
@@ -281,48 +281,21 @@ for (const c of changes) {
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   const tp = join(c.dir, "tasks.md");
-  if (existsSync(tp) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(tp))) {
+  if (existsSync(tp) && /^\s*(?:[-*+]|\d+\.)\s+\[ \]/m.test(lib.readText(tp))) {
     warn(`${c.id}: open tasks in tasks.md`, [c.id]);
   }
 }
 
 // 9c) tech brief: walkthrough.md completeness + comprehension sign-off
-const WALKTHROUGH_SECTIONS = [
-  ["Mechanism", /^##\s+Mechanism\b/im],
-  ["Physical traceability", /^##\s+Physical traceability\b/im],
-  ["Limits and failure modes", /^##\s+Limits and failure modes\b/im],
-  ["Touched APIs", /^##\s+Touched APIs\b/im],
-  ["Implicit decisions", /^##\s+Implicit decisions\b/im],
-];
-function briefIssues(c) {
-  const wp = join(c.dir, "walkthrough.md");
-  if (!existsSync(wp)) return ["walkthrough.md missing"];
-  const text = lib.readText(wp);
-  const issues = [];
-  for (const [name, re] of WALKTHROUGH_SECTIONS) {
-    const m = re.exec(text);
-    if (!m) {
-      issues.push(`'## ${name}' missing`);
-      continue;
-    }
-    const rest = text.slice(m.index + m[0].length);
-    const next = rest.search(/^##\s/m);
-    const body = (next >= 0 ? rest.slice(0, next) : rest).trim();
-    if (body.length < 40) issues.push(`'## ${name}' looks empty`);
-  }
-  if (!/^##\s+Cognitive sign-off\b/im.test(text)) issues.push("'## Cognitive sign-off' missing");
-  return issues;
-}
 function signoffPending(c) {
   if (!c.understood_by || !c.understood_at) return "sign-off not recorded (understood_by/understood_at)";
-  const wp = join(c.dir, "walkthrough.md");
-  if (existsSync(wp) && /TODO\(human\)/i.test(lib.readText(wp))) return "answers still TODO(human)";
+  if (lib.signoffTodoIn(c.dir)) return "answers still TODO(human)";
   return null;
 }
 for (const c of changes) {
   if (!c.tech_brief || TERMINAL.includes(c.status)) continue;
   if (!["applying", "verified"].includes(c.status)) continue;
-  const issues = briefIssues(c);
+  const issues = lib.briefIssues(c.dir);
   if (issues.length) {
     warn(`${c.id}: tech brief incomplete — ${issues.join("; ")}`, [c.id]);
   } else if (c.status === "verified") {
@@ -364,13 +337,19 @@ for (const c of changes) {
 const adrApproves = (dec, id) => {
   const esc = String(id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const reId = new RegExp(`(?:^|[^A-Za-z0-9_-])${esc}(?![A-Za-z0-9_-])`);
-  // Section-aware: id and approval verb may live on different lines (heading +
-  // decision line) as long as they share the `## ...` section.
+  const positive = (l) => {
+    if (/rechaz|reject|disapprov|unapprov/i.test(l)) return false;
+    if (/\b(?:no|not|sin|never)\b[^.!?\n]{0,30}(?:aprob|approv)/i.test(l)) return false;
+    return /(?<![a-z])(?:aprob|approv)/i.test(l);
+  };
+  // Section-aware: the id may be in the `## ...` heading with the approval on a
+  // later line of the same section; without a heading, id and verb must share a line.
   return dec.split(/\r?\n(?=##\s)/).some((block) => {
     if (!reId.test(block)) return false;
-    return block
-      .split(/\r?\n/)
-      .some((l) => /aprob|approv/i.test(l) && !/rechaz|reject/i.test(l));
+    const lines = block.split(/\r?\n/);
+    const idInHeading = lines.some((l) => /^##\s/.test(l) && reId.test(l));
+    if (idInHeading) return lines.some(positive);
+    return lines.some((l) => reId.test(l) && positive(l));
   });
 };
 for (const c of changes) {
@@ -453,12 +432,14 @@ if (diffBase) {
         if (!o.human_approved) err(`--diff: ${o.id} touches a protected file without approval → ${f} (zone ${z.glob})`, [o.id]);
       }
     }
+    const SCOPE_EXTS = new Set([...lib.CODE_EXTS, ".kts", ".gradle", ".toml", ".properties", ".xml"]);
     for (const f of changed) {
       if (lib.matchZones(f, cfg.protectedZones)) continue;
       const k = lib.pathKey(f);
       if (k.startsWith("openspec/")) continue;
-      const ext = k.slice(k.lastIndexOf("."));
-      if (!lib.CODE_EXTS.has(ext)) continue;
+      const dot = k.lastIndexOf(".");
+      const ext = dot > 0 ? k.slice(dot) : "";
+      if (!SCOPE_EXTS.has(ext)) continue;
       const owners = changes.filter((c) => !TERMINAL.includes(c.status) && c.targets.some((t) => lib.pathCoveredBy(f, t)));
       if (!owners.length) warn(`--diff: changed file not claimed by any active change → ${f} (scope drift?)`);
     }
@@ -469,14 +450,18 @@ if (diffBase) {
 {
   const caps = new Map();
   const pushCap = (id, source, path, status) => {
-    const key = String(id).trim().toLowerCase();
+    const raw = String(id).trim();
+    if (raw && !raw.toLowerCase().startsWith("cap:")) {
+      warn(`${source === "living" ? path : source}: provides '${raw}' without the 'cap:' prefix (expected cap:${raw})`, source === "living" ? [] : [source]);
+    }
+    const key = raw.toLowerCase();
     if (!caps.has(key)) caps.set(key, []);
     caps.get(key).push({ source, path, status });
   };
   for (const cap of lib.listCapabilities(root)) for (const id of cap.provides) pushCap(id, "living", cap.path, "living");
   for (const c of changes) {
     for (const f of lib.walkMd(join(c.dir, "specs"))) {
-      const fm = lib.readFrontmatter(f);
+      const fm = lib.normalizeMeta(lib.readFrontmatter(f));
       for (const id of lib.arr(fm.provides)) pushCap(id, c.id, relative(root, f), c.status);
     }
   }
@@ -552,13 +537,15 @@ if (diffBase) {
       const m = String(cap.path).replace(/\\/g, "/").match(/^openspec\/specs\/(.+)\/spec\.md$/i);
       if (m) living.push(m[1]);
     }
+    const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     for (const capPath of living) {
-      if (!dsl.includes("cap:" + capPath.toLowerCase())) {
+      const reTag = new RegExp("cap:" + escRe(capPath.toLowerCase()) + "(?![a-z0-9._-])");
+      if (!reTag.test(dsl)) {
         warn(`capability '${capPath}' is not tagged in ARCHITECTURE.dsl (cap:${capPath}) — run /diagram-sync`);
       }
     }
     const known = new Set(living.map((x) => x.toLowerCase()));
-    const tags = [...new Set([...dsl.matchAll(/cap:[a-z0-9._-]+/g)].map((x) => x[0]))];
+    const tags = [...new Set([...dsl.matchAll(/(?<![a-z0-9_])cap:[a-z0-9._-]+/g)].map((x) => x[0]))];
     for (const tag of tags) {
       if (!known.has(tag.slice(4))) warn(`ARCHITECTURE.dsl: tag '${tag}' references no living capability (stale?)`);
     }
@@ -828,15 +815,15 @@ if (preArchiveId) {
     if (c.conflicts.length) err(`pre-archive ${c.id}: ${c.conflicts.length} unapproved conflict(s)`, [c.id]);
     if (c.kind === "architecture") warn(`pre-archive ${c.id}: kind architecture — did /diagram-sync run? (ARCHITECTURE.dsl)`, [c.id]);
     const findingsPath = join(c.dir, "findings.md");
-    if (existsSync(findingsPath) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(findingsPath))) {
+    if (existsSync(findingsPath) && /^\s*(?:[-*+]|\d+\.)\s+\[ \]/m.test(lib.readText(findingsPath))) {
       warn(`pre-archive ${c.id}: open findings in findings.md (did you resolve them?)`, [c.id]);
     }
     const tasksPath = join(c.dir, "tasks.md");
-    if (existsSync(tasksPath) && /^\s*[-*]\s+\[ \]/m.test(lib.readText(tasksPath))) {
+    if (existsSync(tasksPath) && /^\s*(?:[-*+]|\d+\.)\s+\[ \]/m.test(lib.readText(tasksPath))) {
       warn(`pre-archive ${c.id}: open tasks in tasks.md (did you finish them?)`, [c.id]);
     }
     if (c.tech_brief) {
-      const brief = briefIssues(c);
+      const brief = lib.briefIssues(c.dir);
       if (brief.length) err(`pre-archive ${c.id}: tech brief incomplete — ${brief.join("; ")}`, [c.id]);
       const pend = signoffPending(c);
       const debtWaived = c.waivers.some((w) => String(w.type) === "comprehension-debt" && !blameWaiver(w));
@@ -859,7 +846,7 @@ if (preArchiveId) {
     }
     const refCandidate = c.merged_as || c.gitref;
     if (!refCandidate) {
-      if (lib.gitHead(root)) {
+      if (lib.gitRepoPresent(root)) {
         err(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable (set gitref; after squash-merge: merged_as)`, [c.id]);
       } else {
         warn(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable (no git)`, [c.id]);

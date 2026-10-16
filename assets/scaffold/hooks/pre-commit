@@ -1,9 +1,11 @@
 #!/bin/sh
 # Spec Growth — static gate on every commit (seconds).
-# On a change/<id> branch it is scoped to that change (errors of other active
-# changes do not block the commit); anywhere else it runs global.
+# On a change/<id> branch with an existing change folder it is scoped to that
+# change (errors of other active changes do not block the commit); otherwise global.
 BR=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
-case "$BR" in
-  change/*) node scripts/gates/gate-check.mjs --scope "${BR#change/}" || exit 1 ;;
-  *) node scripts/gates/gate-check.mjs || exit 1 ;;
-esac
+ID="${BR#change/}"
+if [ "$BR" != "$ID" ] && [ -d "openspec/changes/$ID" ]; then
+  node scripts/gates/gate-check.mjs --scope "$ID" || exit 1
+else
+  node scripts/gates/gate-check.mjs || exit 1
+fi

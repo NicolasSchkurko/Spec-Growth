@@ -15,7 +15,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ap
 **Failure protocol (mid-apply)**: if the approach proves unviable (incompatible API, breaks unrelated tests, wrong reading of a requirement) → **STOP**; do not keep patching over a broken attempt. Restore a clean state (`git restore .` or discard the uncommitted work), set `.openspec.yaml` back to `accepted` (or `blocked` + `reason` if it needs a decision), report what failed and why, and retry in a fresh session with a revised plan. Never leave the tree half-done.
 
 **Execution:**
-1. `git checkout -b change/<id>` (continue on it if it already exists). When committing, update `gitref` in `.openspec.yaml` to the **branch tip** (`git rev-parse --short HEAD`) — this is what `--pre-archive` verifies against **HEAD** (squash-merge: use `merged_as: <squash commit sha>`).
+1. `git checkout -b change/<id>` (continue on it if it already exists). When committing, update the `gitref` key in `.openspec.yaml` (repo key convention: bare or `x-`) to the **branch tip** (`git rev-parse --short HEAD`) — this is what `--pre-archive` verifies against **HEAD** (squash-merge: use `merged_as: <squash commit sha>`).
 2. Implement `tasks.md` task by task. Write the tests for each missing `[@test]`. If the project uses **requirement IDs**, cite what you cover in tests/code: `@cita REQ-…` (a citation to a nonexistent ID is a gate error — hallucination detector).
 3. Update `.openspec.yaml`: `status: applying`.
 4. **Tech brief** (only if `tech_brief: true` — or if you find it should be: the change touches persistence/state, concurrency, networking, platform SDKs, security or a new dependency → add the flag and say so in the report): write `openspec/changes/<id>/walkthrough.md` in **plain language** (a future reader who does not know this code must understand it; no jargon). Structure:
@@ -35,6 +35,6 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ap
    - Open questions / decisions taken during implementation
 7. **`verified` only if**: green gate **with test evidence** + no blocking waivers (requested/expired) + no pending decisions + no unapproved conflicts + (protected zone → approved **with its id in `DECISIONS.md`**). Otherwise it stays `applying` with the list of blockers. (A pending tech brief or comprehension sign-off is a warning only — it blocks `--pre-archive`, not `verified`.)
 8. If the change is `kind: architecture` **or creates a new capability**: suggest `/diagram-sync` before archiving (capability tags live in `ARCHITECTURE.dsl`).
-9. **Pre-archive** (after merge, before archiving): `node scripts/gates/gate-check.mjs --pre-archive <id>` must be **OK** (verified · no waivers · no decisions · no conflicts · tech brief complete + comprehension sign-off · `gitref` merged). Only then: `openspec archive <id>`.
+9. **Pre-archive** (after merge, before archiving): `node scripts/gates/gate-check.mjs --pre-archive <id>` must be **OK** (verified · no blocking waivers · no decisions · no conflicts · tech brief complete + comprehension sign-off · `gitref` merged). Only then: `openspec archive <id>`.
 
 **At the end, state**: review the diff, merge, and only then archive with the preconditions OK.

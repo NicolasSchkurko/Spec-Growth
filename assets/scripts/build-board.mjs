@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Spec Growth — generates BOARD.md and openspec/board.json (v0.9).
+// Spec Growth — generates BOARD.md and openspec/board.json (v1.0).
 // Human sections: pending approvals · decisions/⚔ conflicts · in progress (with
 // real green evidence) · drafts · registered waivers · invalid states · blocked ·
 // archive · warnings. The capability registry is machine data.
@@ -59,7 +59,7 @@ const pushCap = (id, source, path) => {
 for (const cap of lib.listCapabilities(root)) for (const id of cap.provides) pushCap(id, "living", cap.path);
 for (const c of changes) {
   for (const f of lib.walkMd(join(c.dir, "specs"))) {
-    const fm = lib.readFrontmatter(f);
+    const fm = lib.normalizeMeta(lib.readFrontmatter(f));
     for (const id of lib.arr(fm.provides)) pushCap(id, c.id, `changes/${c.id}`);
   }
 }
@@ -154,10 +154,11 @@ for (const c of changes) {
 }
 for (const c of changes) {
   if (!c.tech_brief || TERMINAL.includes(c.status) || !["applying", "verified"].includes(c.status)) continue;
-  const wp = join(c.dir, "walkthrough.md");
-  const has = existsSync(wp);
-  const todo = has ? /TODO\(human\)/i.test(lib.readText(wp)) : false;
-  if (!has || !(c.understood_by && c.understood_at)) pendingComprehension.push({ c, has, todo });
+  const has = existsSync(join(c.dir, "walkthrough.md"));
+  const issues = has ? lib.briefIssues(c.dir) : [];
+  const todo = has ? lib.signoffTodoIn(c.dir) : false;
+  const signed = Boolean(c.understood_by && c.understood_at);
+  if (!has || issues.length || todo || !signed) pendingComprehension.push({ c, has, issues, todo, signed });
 }
 
 const fmt = (iso) =>
@@ -228,16 +229,18 @@ md += openWaivers.length
 md += `\n\n## 🧠 Awaiting your comprehension (tech brief)\n\n`;
 md += pendingComprehension.length
   ? pendingComprehension
-      .map(
-        ({ c, has, todo }) =>
-          `- **${c.id}** (${c.status}) — ${
-            !has
-              ? "walkthrough not written yet"
-              : todo
-                ? "walkthrough ready — answers pending (`/spec-verify`)"
-                : "walkthrough ready — sign-off pending (`/spec-verify`)"
-          }`
-      )
+      .map(({ c, has, issues, todo, signed }) => {
+        const state = !has
+          ? "walkthrough not written yet"
+          : issues.length
+            ? `tech brief incomplete (${issues.join("; ")})`
+            : todo
+              ? "walkthrough ready — answers pending (`/spec-verify`)"
+              : !signed
+                ? "walkthrough ready — sign-off pending (`/spec-verify`)"
+                : "walkthrough ready";
+        return `- **${c.id}** (${c.status}) — ${state}`;
+      })
       .join("\n")
   : "_(nothing pending)_";
 if (invalid.length) {
@@ -247,9 +250,18 @@ if (invalid.length) {
 md += `\n\n## Blocked / rejected\n\n`;
 md += blocked.length ? blocked.map((c) => line(c)).join("\n") : "_(empty)_";
 md += `\n\n## Capabilities (living specs)\n\n`;
+const dslPath = join(root, "ARCHITECTURE.dsl");
+const dslText = existsSync(dslPath) ? lib.readText(dslPath).toLowerCase() : null;
 md += caps.size
   ? [...caps.entries()]
-      .map(([id, ps]) => `- **${id}** — ${ps.map((p) => (p.source === "living" ? `owner: ${p.path}` : `draft in ${p.source}`)).join(" · ")}`)
+      .map(([id, ps]) => {
+        let line = `- **${id}** — ${ps.map((p) => (p.source === "living" ? `owner: ${p.path}` : `draft in ${p.source}`)).join(" · ")}`;
+        if (dslText && id.startsWith("cap:")) {
+          const folder = id.slice(4).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          if (!new RegExp("cap:" + folder + "(?![a-z0-9._-])").test(dslText)) line += " · ⚠ not tagged in ARCHITECTURE.dsl";
+        }
+        return line;
+      })
       .join("\n")
   : "_(none registered)_";
 md += `\n\n## Dependency graph (declared deps)\n\n`;
@@ -285,7 +297,10 @@ if (depNodes.size) {
 md += `\n\n## Archive\n\n- Archived changes: ${archived.length}`;
 if (digests.length) md += ` · digests: ${digests.join(", ")}`;
 md += "\n";
-if (archived.length) md += archived.slice(0, 5).map((a) => `- ${a}`).join("\n") + "\n";
+if (archived.length) {
+  md += archived.slice(0, 5).map((a) => `- ${a}`).join("\n") + "\n";
+  if (archived.length > 5) md += `- _(+${archived.length - 5} older)_\n`;
+}
 if (warnings.length) md += `\n## Warnings\n\n${warnings.map((w) => `- ${w}`).join("\n")}\n`;
 lib.writeAtomic(join(root, "BOARD.md"), md);
 

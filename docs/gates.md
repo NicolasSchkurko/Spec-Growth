@@ -12,14 +12,15 @@ flowchart TD
     A[parse .openspec.yaml and specs] --> B[status and kind enums; reason; superseded_by]
     B --> C[overlaps: containment + globs<br/>error only with applying work; deps-sequenced pairs → warning]
     C --> D["[@test] paths exist; fix/refactor need a regression"]
-    D --> E[waivers: valid granted enables; requested/expired block]
+    D --> D2[tech brief: walkthrough + comprehension sign-off<br/>tasks.md / findings.md open items]
+    D2 --> E[waivers: valid granted enables; requested/expired block]
     E --> F[open decisions and conflicts]
     F --> G[protected zones: targets + real changed files + ADR cross-check]
-    G --> H[capabilities; requirement IDs; citations]
+    G --> H[capabilities: registry, new-capability collisions,<br/>ARCHITECTURE.dsl tags (both ways); requirement IDs; citations]
     H --> I[deps resolve against active/archived/compacted]
     I --> J[archive hygiene: unclosed waivers/decisions/conflicts]
     J --> K[test suite: --run-tests]
-    K --> L[evidence merge + staleness]
+    K --> L[evidence merge + content-fingerprint staleness]
     L --> M[--pre-archive preconditions, when requested]
     M --> N[report + evidence.json + exit code]
 ```
@@ -32,8 +33,8 @@ flowchart TD
 | `--run-tests` | Runs the project's `test_command` and records **green test evidence** — the CI/verification mode |
 | `--tests-command "CMD"` | Runs `CMD` in **substituted** mode: evidence is recorded but never green. Forbidden in CI |
 | `--scope <id>` | Local focus: reds **from other changes** become warnings. **Report only** — evidence and `gate_ok` are always computed unfiltered |
-| `--pre-archive <id>` | Archive preconditions for one change |
-| `--diff <base>` | Protected-file check against a git base — for CI |
+| `--pre-archive <id>` | Archive preconditions for one change (incl. tech brief + comprehension sign-off) |
+| `--diff <base>` | Protected files + unclaimed code files (scope drift) against a git base — for CI |
 | `--json` | Machine-readable report |
 | `--root DIR` | Repo root (defaults to the nearest ancestor with `openspec/changes`) |
 
@@ -44,7 +45,7 @@ Exit code: `0` when there are no errors, `1` otherwise. Every run writes `opensp
 ```mermaid
 flowchart TD
     R["gate-check --run-tests"] -->|test_command exits 0| G[green recorded for changes without gate errors]
-    G --> Q{targets or tests committed after the run?}
+    G --> Q{targets/tests content changed after the run?<br/>(fingerprint; commits alone do not stale)}
     Q -->|no| OK[valid green]
     Q -->|yes| S[STALE — warning in static, error in --pre-archive]
     T[static run] -->|verified without stored green| W[warning]
@@ -52,7 +53,7 @@ flowchart TD
 ```
 
 - Green is per change and merged across runs: a valid previous green is kept until it goes stale.
-- `--pre-archive` requires **fresh** green: re-run `--run-tests` before archiving if the code moved.
+- `--pre-archive` requires **fresh** green: re-run `--run-tests` before archiving if the content moved (any edit — even uncommitted — counts).
 - Static mode treats missing green as a warning (it must not block your local commit); CI is the real barrier.
 
 ## Protected zones

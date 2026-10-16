@@ -16,6 +16,7 @@ sequenceDiagram
     Ag->>Dev: /spec-apply → branch change/id, code + tests
     Ag->>G: gate-check --run-tests
     G-->>Ag: GATE GREEN (evidence recorded)
+    Dev->>Ag: /spec-verify → comprehension sign-off (if tech brief)
     Dev->>CI: push → CI runs gate-check --run-tests --diff main
     Dev->>Ag: merge → /spec-gate --pre-archive id
     Ag->>Dev: OK → openspec archive id
@@ -24,8 +25,9 @@ sequenceDiagram
 1. `/spec-add "<idea>"` — clarify, alternatives if a technical decision is embedded, draft created.
 2. **You approve** (say it; the agent records `status: accepted` + `accepted_by`/`accepted_at`).
 3. `/spec-apply <id>` — implementation on `change/<id>`; tests + gate with green evidence; `verified` when unblocked.
-4. Push, review, merge. Update `gitref` (or `merged_as` for squash-merges).
-5. `--pre-archive <id>` → OK → `openspec archive <id>`.
+4. Flagged as `tech_brief: true` (persistence/state/network/SDKs/security/new dep)? The agent writes `walkthrough.md`; run `/spec-verify` to answer the 3 questions — the comprehension sign-off is recorded there.
+5. Push, review, merge. Update `gitref` (or `merged_as` for squash-merges).
+6. `--pre-archive <id>` → OK → `openspec archive <id>`.
 
 ## 2. A bug (or a discrepancy)
 
@@ -85,6 +87,12 @@ Same flow as a feature, with `kind: refactor`. The contract does not change, so 
 
 ## 7. Archiving and compaction
 
-- Before archiving: `--pre-archive <id>` must be **OK** (verified · no blocking waivers · no decisions · no conflicts · merge verified against the current target state).
+- Before archiving: `--pre-archive <id>` must be **OK** (verified · no blocking waivers · no decisions · no conflicts · tech brief complete + signed off · merge verified against the current target state).
 - `openspec archive <id>` moves the folder to `openspec/changes/archive/YYYY-MM-DD-<id>/`.
-- Periodically: `node scripts/gates/compact-archive.mjs --days=90` (dry run) → review → `--apply`. Old folders become one line each in `archive/YYYY.md`; nothing dirty is ever deleted.
+- Periodically: `node scripts/gates/compact-archive.mjs --days=90` (dry run) → review → `--apply`. Old folders become one line each in `archive/YYYY.md`; nothing dirty is ever deleted. If the change had a tech brief, the digest keeps its mechanism line — the detailed walkthrough stays in git history.
+
+## 8. Understanding existing behavior (`/spec-explain`)
+
+1. `/spec-explain "how settings are persisted"` — the agent traces the real path in the code (`file:line`), no assumptions.
+2. It delivers: step-by-step mechanism, physical traceability, limits and failure modes, touched APIs, and a Mermaid flow — and (for hard-won knowledge) anchors a note under `docs/mechanisms/`.
+3. If the code is opaque it proposes a `kind: refactor` change; if the behavior is in no spec it proposes `/spec-add` or `/spec-triage`. It never edits code or specs.
