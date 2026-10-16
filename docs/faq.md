@@ -36,5 +36,8 @@ It is allowed, but the gate warns when a granted waiver has more than 180 days o
 **How do I see everything that awaits me right now?**
 `BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · 🧠 comprehension sign-offs · in progress · drafts · waivers · Capabilities · Dependency graph · blocked · archive · warnings.
 
+**Is Spec Growth based on research?**
+Partly, and it says which part: the v1.0 comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — novice-heavy populations, so the mechanisms transfer but the effect sizes do not. The rest is engineering practice from audit rounds. Full map and caveats: [Evidence & limits](evidence.md).
+
 **Do the docs go stale?**
 The system's own honesty rule applies to itself: `SKILL.md` carries the implementation-status section, and if a script changes, the skill and these documents are updated together.

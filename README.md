@@ -92,6 +92,11 @@ Detailed docs live in [`docs/`](docs/README.md), with diagrams:
 - [Gates](docs/gates.md) — what the gate checks, the modes and flags, and the CI policy
 - [Workflows](docs/workflows.md) — step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict
 - [FAQ](docs/faq.md) — short answers to the first questions
+- [Evidence & limits](docs/evidence.md) — the research the comprehension gate is based on, what transfers (and what does not), and the consolidated known limits
+
+## Evidence & limits
+
+Part of this system is research-backed, and it says which part: the v1.0 comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — with explicit caveats (predominantly novice populations; mechanisms transfer, effect sizes do not). The rest is engineering practice from adversarial audit rounds (v0.5 → v1.0). Full map and the consolidated known limits: [docs/evidence.md](docs/evidence.md).
 
 ## Status
 

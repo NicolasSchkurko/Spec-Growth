@@ -130,10 +130,12 @@ If something fails midway: do not leave the repo dirty; report what was done and
 - Base v0.8: **`--scope` is report-only** (evidence and `gate_ok` are computed unfiltered; a red suite is global and non-degradable; `evidence.json` records `scope`) · approval ADR requires **a line with an approval verb + the id as a word** (a rejection line does not approve) · zones detect **untracked** files (`git ls-files --others`) · `--pre-archive` expands targets to **concrete files** (empty or unmatched glob → error) · `granted` waivers with >180-day validity warn; expired ones in `archive/` are reported · `walkMd` no longer excludes `build/target/out` under `openspec/` · block parser with real dedent · `writeAtomic` with retry/cleanup and fallback (Windows/AV) · text/tracked/glob caches and expansion cap (2000) · evidence re-read close to the write.
 - Earlier rounds (v0.5–v0.7): `--tests-command` → `tests-substituted` (no green) and forbidden in CI; committed `evidence.json` → error; per-change evidence refresh; zones checked over real changed files; `merged_as`/`gitref` must contain the current target state; overlap is an error only with `applying` work; drafts do not legitimate requirement IDs; caps compared case-insensitively; staleness includes tests; compact `--force` never deletes dirty content; `test_command` metacharacters require `SPEC_GROWTH_ALLOW_SHELL_CMD=1`; pinned versions in INIT.
 
-**NOT implemented (deliberate, v0.9):**
+**NOT implemented (deliberate, v1.0):**
 - Evidence signing/attestation (HMAC/OIDC): rejected by majority (single-dev); documented as a limit.
 - Orphan-code / undeclared-dependency detection over the import graph (advisory semantic pass + codebase-memory).
 - Consumer migration on breaking changes; auto-archive; a generated CI workflow (documented policy, not an asset).
+
+**Evidence base**: the v1.0 comprehension axis is grounded in recent GenAI-assisted SE research (comprehension debt, explanation gates, skill formation, cognitive-load-aware refactoring) — predominantly novice-study populations: mechanisms transfer, effect sizes do not. Full map and caveats in the repo's `docs/evidence.md`.
 
 **Known limits:**
 - Evidence is local and per-clone, and **not tamper-proof** (unsigned): the real barrier is running `--run-tests` in CI.
