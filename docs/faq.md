@@ -1,0 +1,34 @@
+# FAQ
+
+**How do I approve a change?**
+Two equivalent ways. Tell the agent "approved" (or run `/spec-resolve` and answer item by item) — it writes the records for you. Or edit them yourself: to **accept**, in the change's `.openspec.yaml` set `status: accepted`, `accepted_by: "<name>"`, `accepted_at: "<date>"`. Everything else (protected zones, waivers, decisions, conflicts) is itemized in [Lifecycle → What to record](lifecycle.md#what-to-record-for-each-kind-of-approval).
+
+**Do I have to write something in `DECISIONS.md` myself?**
+Not normally — the agent writes it when you approve. A plain accept needs no ADR at all. A **protected zone** does: `human_approved: true` plus an approval line in `DECISIONS.md` mentioning the change id as a word. Decision and conflict resolutions also get their ADR so the "why" survives.
+
+**Why does the gate say "verified without local green evidence"?**
+`verified` is earned by a green `gate-check --run-tests` run. In static mode (pre-commit) the missing green is only a warning; before archiving it is an error. Run `--run-tests`.
+
+**Why does it say my green evidence is STALE?**
+The change's `targets` or `tests` received commits after the last recorded green run. Re-run `gate-check --run-tests`.
+
+**Can I commit with a red gate?**
+The pre-commit hook blocks it. If the reds are from *other* changes, use `--scope <id>` for your local commit — it downgrades foreign reds to warnings **in the report only** (the evidence stays honest). CI always runs unscoped.
+
+**What is `--tests-command` for, then?**
+Runs a substitute command in `tests-substituted` mode for convenience/experiments. It records evidence but **never green**, and it is forbidden in CI.
+
+**Why isn't `evidence.json` committed?**
+It is a local, per-clone signal by design. Committing it is a gate error. The barrier that counts is CI running `--run-tests`.
+
+**Decision request or conflict — what's the difference?**
+A **decision request** asks for something **not yet decided** (beyond the agent's authority). A **conflict ⚔** points at something **already decided or written** that the change would overturn. Both block `verified`; both end with an ADR.
+
+**Someone granted a waiver with a far-away expiry. Is that fine?**
+It is allowed, but the gate warns when a granted waiver has more than 180 days of validity, and expired waivers inside `archive/` are reported. A waiver is a dated debt, not a permanent exemption.
+
+**How do I see everything that awaits me right now?**
+`BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · in progress · drafts · waivers · blocked · archive · warnings.
+
+**Do the docs go stale?**
+The system's own honesty rule applies to itself: `SKILL.md` carries the implementation-status section, and if a script changes, the skill and these documents are updated together.

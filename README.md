@@ -74,10 +74,21 @@ Works alongside the `bug-finder` skill in **anchored mode**: it audits against t
 
 ```
 SKILL.md            the canonical spec: glossary, INIT, operations, rules, status and limits
+docs/               how it works, with diagrams: concepts · lifecycle & approvals · gates · workflows · FAQ
 assets/commands/    the seven commands copied into a repo by the INIT
 assets/scripts/     gate-check.mjs · build-board.mjs · compact-archive.mjs · lib.mjs
 assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch · seeds
 ```
+
+## Documentation
+
+Detailed docs live in [`docs/`](docs/README.md), with diagrams:
+
+- [Concepts](docs/concepts.md) — the vocabulary and where everything lives
+- [Lifecycle & approvals](docs/lifecycle.md) — how a change moves from idea to archive, and exactly what to record for each approval
+- [Gates](docs/gates.md) — what the gate checks, the modes and flags, and the CI policy
+- [Workflows](docs/workflows.md) — step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict
+- [FAQ](docs/faq.md) — short answers to the first questions
 
 ## Status
 
