@@ -50,3 +50,5 @@ Env overrides: `CONF_MODEL` (agent under test), `CONF_JUDGE` (judge model), `OPE
 2. Run the full suite on the current system → `summary.md` = baseline.
 3. Apply one change at a time (diet, restructure…) and re-run the identical suite.
 4. Compare per-rule pass rates and pass^k. **The bar: equal or better.**
+
+Recorded baselines: [`BASELINE.md`](BASELINE.md) (2026-10-16, v1.1 work start). Generated artifacts per run: `summary.md` (behavior), `tokens.md` (token usage).
