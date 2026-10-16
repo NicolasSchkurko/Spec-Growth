@@ -1,0 +1,28 @@
+schema: spec-anchored
+
+# Comando de tests del proyecto. Lo usa `gate-check --run-tests` para registrar evidencia real.
+# Ejemplos: "./gradlew test" (Linux/macOS) · "gradlew.bat test" (Windows) · "npm test" · "pytest -q"
+# test_command: ""
+
+context: |
+  <!-- Completar: stack del proyecto, convenciones y cómo correr los tests -->
+
+rules:
+  proposal:
+    - Declarar kind (fix|feature|architecture|refactor), targets, tests y deps en .openspec.yaml
+    - Corto: por qué y qué. El cómo va en design.md, solo si kind=architecture
+  specs:
+    - Requirements en SHALL; escenarios WHEN/THEN concretos
+    - Cada requirement lleva una línea [@test] con la ruta del test que lo verifica
+  tasks:
+    - Checklist verificable; tareas pequeñas, cada una completable y probable
+
+# Zonas protegidas: cambios que tocan estos globs requieren aprobación humana explícita
+# (llave `human_approved: true` en el change, indicada por el humano). Se ven en BOARD.md.
+# Ejemplo:
+# protected:
+#   - glob: "app/src/main/**/storage/**"
+#     reason: "persistencia — datos del usuario"
+#   - glob: "**/auth/**"
+#     reason: "autenticación"
+protected: []

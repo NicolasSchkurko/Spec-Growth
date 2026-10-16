@@ -1,0 +1,4 @@
+#!/bin/sh
+# Spec Growth — gate estático en cada commit (segundos).
+# Instalado por el INIT de la skill spec-growth (copiado a .git/hooks/pre-commit).
+node scripts/gates/gate-check.mjs || exit 1
