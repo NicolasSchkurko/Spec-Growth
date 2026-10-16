@@ -88,7 +88,7 @@ for (const pe of parseErrors) {
       const b = pairs[j];
       if (a.id === b.id) continue;
       if (!lib.targetsOverlap(a.key, b.key)) continue;
-      const k = [a.id, b.id].sort().join("|") + "::" + [a.key, b.key].sort().join(" ~ ");
+      const k = [a.id, b.id].sort().join("|") + "::" + [String(a.raw), String(b.raw)].sort().join(" ~ ");
       if (seen.has(k)) continue;
       seen.add(k);
       warnings.push(

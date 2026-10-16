@@ -118,7 +118,7 @@ If something fails midway: do not leave the repo dirty; report what was done and
 ## Implementation status (v0.9) and known limits
 
 **Implemented and verified by the scripts (adversarial audit/engineering rounds v0.5→v0.9):**
-- v0.9: **kind `refactor`** (requires a regression `[@test]`, like `fix`) · **⚔ conflicts** (`conflicts` in `.openspec.yaml`: they block `verified` and `--pre-archive` until approval + ADR; the BOARD shows them) · **deps-sequenced overlaps** (direct or transitive) → warning instead of error, in gate and board · `bug-finder` integrated in anchored mode (external skill).
+- v0.9: **kind `refactor`** (requires a regression `[@test]`, like `fix`) · **⚔ conflicts** (`conflicts` in `.openspec.yaml`: they block `verified` and `--pre-archive` until approval + ADR; the BOARD shows them) · **deps-sequenced overlaps** (direct or transitive) → warning instead of error, in gate and board · **native `x-` key support** (metadata accepted bare or `x-`-prefixed — OpenSpec ≥1.14 strict validation recommends the prefix) · **glob-aware target existence** (no false positives on `**` targets) · one overlap report per target pair (no duplicate spam) · quieter `config.yaml` parsing (nested OpenSpec-owned sections are not reported) · `bug-finder` integrated in anchored mode (external skill).
 - Base v0.8: **`--scope` is report-only** (evidence and `gate_ok` are computed unfiltered; a red suite is global and non-degradable; `evidence.json` records `scope`) · approval ADR requires **a line with an approval verb + the id as a word** (a rejection line does not approve) · zones detect **untracked** files (`git ls-files --others`) · `--pre-archive` expands targets to **concrete files** (empty or unmatched glob → error) · `granted` waivers with >180-day validity warn; expired ones in `archive/` are reported · `walkMd` no longer excludes `build/target/out` under `openspec/` · block parser with real dedent · `writeAtomic` with retry/cleanup and fallback (Windows/AV) · text/tracked/glob caches and expansion cap (2000) · evidence re-read close to the write.
 - Earlier rounds (v0.5–v0.7): `--tests-command` → `tests-substituted` (no green) and forbidden in CI; committed `evidence.json` → error; per-change evidence refresh; zones checked over real changed files; `merged_as`/`gitref` must contain the current target state; overlap is an error only with `applying` work; drafts do not legitimate requirement IDs; caps compared case-insensitively; staleness includes tests; compact `--force` never deletes dirty content; `test_command` metacharacters require `SPEC_GROWTH_ALLOW_SHELL_CMD=1`; pinned versions in INIT.
 
@@ -139,7 +139,7 @@ If something fails midway: do not leave the repo dirty; report what was done and
 
 ## Assumptions to verify (spike)
 
-- `.openspec.yaml` tolerates extra keys (`kind`, `targets`, `tests`, `deps`, `gitref`, `waivers`, `open_decisions`, `conflicts`, `human_approved`) without breaking `openspec validate`. Otherwise: move them to the delta spec frontmatter.
+- `.openspec.yaml` tolerates extra keys (`kind`, `targets`, `tests`, `deps`, `gitref`, `waivers`, `open_decisions`, `conflicts`, `human_approved`) without breaking `openspec validate`. Otherwise, use the `x-<key>` form (recommended by OpenSpec ≥1.14 for custom keys; the gate accepts bare and prefixed metadata natively).
 - `openspec schema fork` exists in the installed version.
 - `opencode mcp add` syntax (local `--` / remote `--url`).
 - The project's `test_command` (Android: `./gradlew test`).

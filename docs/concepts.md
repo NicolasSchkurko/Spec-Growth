@@ -40,6 +40,8 @@ conflicts: []                  # see Conflicts
 # accepted_at: "2026-10-16"
 ```
 
+> Custom metadata keys are accepted both bare (`kind`) and `x-`-prefixed (`x-kind`). OpenSpec ≥ 1.14 strict validation recommends the prefix for custom keys; the gate reads both forms.
+
 ## Evidence
 
 `verified` is not a claim; it is a record. `gate-check --run-tests` executes the project's `test_command` and stores a `green_tests` entry per change in `openspec/evidence.json` — local, git-ignored, **never committed**. Green is recorded only for changes with no gate errors.

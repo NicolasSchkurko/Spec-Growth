@@ -127,13 +127,14 @@ for (const c of changes) {
       const b = pairs[j];
       if (a.c.id === b.c.id) continue;
       if (!lib.targetsOverlap(a.key, b.key)) continue;
-      const k = [a.c.id, b.c.id].sort().join("|") + "::" + [a.key, b.key].sort().join(" ~ ");
+      const k = [a.c.id, b.c.id].sort().join("|") + "::" + [String(a.raw), String(b.raw)].sort().join(" ~ ");
       if (seen.has(k)) continue;
       seen.add(k);
       const msg = `overlap: '${a.raw}' (${a.c.id}, ${a.c.status}) and '${b.raw}' (${b.c.id}, ${b.c.status}) overlap`;
       const active = a.c.status === "applying" || b.c.status === "applying";
-      if (active && !sequenced(a.c.id, b.c.id)) err(msg, [a.c.id, b.c.id]);
-      else if (active) warn(`${msg} — sequenced by deps (declared order, not a conflict)`, [a.c.id, b.c.id]);
+      const seq = sequenced(a.c.id, b.c.id);
+      if (active && !seq) err(msg, [a.c.id, b.c.id]);
+      else if (seq) warn(`${msg} — sequenced by deps (declared order, not a conflict)`, [a.c.id, b.c.id]);
       else warn(msg, [a.c.id, b.c.id]);
     }
   }
@@ -156,11 +157,20 @@ for (const c of changes) {
   }
 }
 
-// 4) existing targets (applying/verified): suspect renames
+// 4) existing targets (applying/verified): suspect renames; wildcard targets check their base
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   for (const t of c.targets) {
-    if (!existsSync(normalize(join(root, t)))) warn(`${c.id}: target does not exist on disk (renamed?) → ${t}`, [c.id]);
+    const s = String(t);
+    if (!/[*?]/.test(s)) {
+      if (!existsSync(normalize(join(root, s)))) warn(`${c.id}: target does not exist on disk (renamed?) → ${s}`, [c.id]);
+      continue;
+    }
+    const base = s.slice(0, s.search(/[*?]/)).replace(/[\\/]+$/, "");
+    if (!base) continue; // pattern starts with a wildcard: uncheckable
+    if (!existsSync(normalize(join(root, base)))) {
+      warn(`${c.id}: target base path does not exist on disk (renamed?) → ${s}`, [c.id]);
+    }
   }
 }
 
@@ -525,7 +535,7 @@ for (const c of changes) {
       if (!st.isDirectory()) continue;
       const metaPath = join(p, ".openspec.yaml");
       if (!existsSync(metaPath)) continue;
-      const m = lib.parseYaml(lib.readText(metaPath));
+      const m = lib.normalizeMeta(lib.parseYaml(lib.readText(metaPath)));
       const ws = lib.arr(m.waivers);
       const ds = lib.arr(m.open_decisions);
       const cs = lib.arr(m.conflicts);

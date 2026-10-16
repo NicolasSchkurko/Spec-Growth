@@ -64,7 +64,7 @@ if (!candidates.length) {
 function kindOf(dir) {
   const f = join(dir, ".openspec.yaml");
   if (!existsSync(f)) return "?";
-  const mm = lib.readText(f).match(/^kind:\s*(\S+)/m);
+  const mm = lib.readText(f).match(/^x?-kind:\s*(\S+)/m);
   return mm ? mm[1].trim() : "?";
 }
 

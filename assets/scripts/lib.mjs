@@ -34,8 +34,11 @@ const stripInlineComment = (s) => {
 
 // Subset parser. `errors` (optional): array where unparsed lines
 // { line, text } get recorded (and duplicate keys).
+// opts.reportNestedUnder (optional Set): when given, nested lines are only reported
+// if they belong to one of these parent keys (used by config.yaml: OpenSpec-owned
+// sections like `rules:` are not gate data and must not add noise).
 // Supports scalar blocks (| and >): their content is captured in the value.
-export function parseYaml(text, errors = null) {
+export function parseYaml(text, errors = null, opts = {}) {
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const out = {};
   let currentKey = null;
@@ -94,7 +97,8 @@ export function parseYaml(text, errors = null) {
         continue;
       }
       if (indent > 0) {
-        report(i, raw); // nested structure outside object lists
+        const nested = opts.reportNestedUnder; // Set of parent keys that stay strict
+        if (!nested || nested.has(currentKey)) report(i, raw); // nested structure outside object lists
         continue;
       }
       if (Object.prototype.hasOwnProperty.call(out, key)) report(i, raw); // duplicate key
@@ -201,11 +205,21 @@ export function proposalTitle(dir) {
 
 const asBool = (v) => v === true || ["true", "yes", "si", "sí"].includes(String(v).trim().toLowerCase());
 
+// Custom metadata keys may be written bare (`kind`) or `x-`-prefixed (`x-kind`).
+// OpenSpec >= 1.14 strict validation recommends the `x-` prefix for custom keys;
+// the gate accepts both (the prefixed form wins if both are present).
+export const normalizeMeta = (meta) => {
+  const out = {};
+  for (const k of Object.keys(meta)) out[k.startsWith("x-") ? k.slice(2) : k] = meta[k];
+  return out;
+};
+
 export function readChange(root, id, errors = null) {
   const dir = join(root, "openspec", "changes", id);
   const metaPath = join(dir, ".openspec.yaml");
   const errs = [];
-  const meta = existsSync(metaPath) ? parseYaml(readText(metaPath), errs) : {};
+  const raw = existsSync(metaPath) ? parseYaml(readText(metaPath), errs) : {};
+  const m = normalizeMeta(raw);
   if (errors) {
     for (const e of errs) errors.push({ id, file: metaPath, line: e.line, text: e.text });
   }
@@ -213,21 +227,21 @@ export function readChange(root, id, errors = null) {
     id,
     dir,
     title: proposalTitle(dir),
-    kind: meta.kind || "feature",
-    status: meta.status || "draft",
-    targets: arr(meta.targets),
-    tests: arr(meta.tests),
-    deps: arr(meta.deps),
-    gitref: meta.gitref || null,
-    merged_as: meta.merged_as || null,
-    reason: meta.reason || null,
-    human_approved: asBool(meta.human_approved),
-    accepted_by: meta.accepted_by || null,
-    accepted_at: meta.accepted_at || null,
-    superseded_by: meta.superseded_by || null,
-    waivers: arr(meta.waivers).map((w) => (typeof w === "string" ? { type: w } : w)),
-    open_decisions: arr(meta.open_decisions).map((d) => (typeof d === "string" ? { question: d } : d)),
-    conflicts: arr(meta.conflicts).map((cf) => (typeof cf === "string" ? { what: cf } : cf)),
+    kind: m.kind || "feature",
+    status: m.status || "draft",
+    targets: arr(m.targets),
+    tests: arr(m.tests),
+    deps: arr(m.deps),
+    gitref: m.gitref || null,
+    merged_as: m.merged_as || null,
+    reason: m.reason || null,
+    human_approved: asBool(m.human_approved),
+    accepted_by: m.accepted_by || null,
+    accepted_at: m.accepted_at || null,
+    superseded_by: m.superseded_by || null,
+    waivers: arr(m.waivers).map((w) => (typeof w === "string" ? { type: w } : w)),
+    open_decisions: arr(m.open_decisions).map((d) => (typeof d === "string" ? { question: d } : d)),
+    conflicts: arr(m.conflicts).map((cf) => (typeof cf === "string" ? { what: cf } : cf)),
   };
 }
 
@@ -277,7 +291,7 @@ export function listArchive(root) {
 export function readConfig(root, errors = null) {
   const p = join(root, "openspec", "config.yaml");
   const errs = [];
-  const cfg = existsSync(p) ? parseYaml(readText(p), errs) : {};
+  const cfg = existsSync(p) ? parseYaml(readText(p), errs, { reportNestedUnder: new Set(["protected"]) }) : {};
   if (errors) for (const e of errs) errors.push({ file: p, line: e.line, text: e.text });
   const protectedZones = arr(cfg.protected)
     .map((z) => (typeof z === "string" ? { glob: z, reason: "" } : z))
