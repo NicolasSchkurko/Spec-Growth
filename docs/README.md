@@ -9,7 +9,7 @@ This folder explains how the system works, why it works that way, and how to ope
 | [Gates](gates.md) | What the mechanical gate checks, the modes and flags, and the CI policy |
 | [Workflows](workflows.md) | Step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict |
 | [FAQ](faq.md) | Short answers to the questions that come up first |
-| [Evidence & limits](evidence.md) | The research the comprehension gate is based on (what transfers, what does not) and the consolidated known limits |
+| [Evidence & limits](evidence.md) | The primary source, the empirical support (and its caveats), the critiques (waterfall, output-vs-outcome, determinism) and the consolidated known limits |
 
 Canonical source of truth: [`../SKILL.md`](../SKILL.md). If a script changes, the skill and these documents are updated together.
 

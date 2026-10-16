@@ -1,0 +1,5 @@
+# Scripts, flags and gate policy
+
+**Scripts**: `gate-check.mjs` — checks + evidence. Flags: `--root DIR` · `--json` · `--scope <id>` (local focus: reds **from other changes** become warnings — report only) · `--run-tests` (runs `test_command` and records green evidence; the CI mode) · `--tests-command "CMD"` (`tests-substituted` mode: **no green**; forbidden in CI) · `--pre-archive <id>` (archive preconditions; tech briefs must be complete + signed off; squash-merge → `merged_as: <sha>`) · `--diff <base>` (protected files vs git diff) · `build-board.mjs` (BOARD.md + board.json, incl. the declared-deps Mermaid graph; badge conditioned on `gate_ok`) · `compact-archive.mjs --days=90 [--apply] [--force]` (yearly digest; requires a **clean, committed** folder before deleting; an invalid `--days` → error).
+
+**Gate policy**: pre-commit (hook) → static `gate-check` (seconds). CI on PR → `gate-check --run-tests --diff <base>` + `openspec validate --all --strict`. Before archiving → `gate-check --pre-archive <id>` **OK**. Weekly → advisory semantic pass (`/spec-verify`).

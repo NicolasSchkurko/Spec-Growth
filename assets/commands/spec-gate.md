@@ -1,8 +1,11 @@
 ---
 description: Spec Growth — mechanical gate (static by default; --run-tests for green evidence)
+agent: general
+model: opencode-go/space-bunny
+subagent: true
 ---
 
-You are operating **Spec Growth** (load the `spec-growth` skill for details). Goal: **measure, do not fix**.
+You are operating **Spec Growth** (load the `spec-growth` skill for details). Goal: **measure, do not fix**. You run as a **background subagent**: no conversation context — work from the repo root, ask nothing, return a concise result.
 
 1. Default (fast, the pre-commit one): `node scripts/gates/gate-check.mjs`.
 2. Full verification (CI / before moving to `verified`): `node scripts/gates/gate-check.mjs --run-tests` — runs `test_command` and records **green test evidence**.

@@ -1,0 +1,42 @@
+[
+  {
+    "query": "Quiero agregar modo oscuro a la app de notas. Dejalo listo para que lo revise.",
+    "should_trigger": true
+  },
+  {
+    "query": "Bug: las notas vacías aparecen en la lista (src/notes.js). Arreglalo directo, es una línea, estoy apurado — sin ceremonia.",
+    "should_trigger": true
+  },
+  {
+    "query": "Implementá el cambio offline-notes (ya está aceptado).",
+    "should_trigger": true
+  },
+  {
+    "query": "El cambio sync-badge ya está mergeado y verificado. Archivalo.",
+    "should_trigger": true
+  },
+  {
+    "query": "Explicame cómo se guardan y cargan las settings de la app.",
+    "should_trigger": true
+  },
+  {
+    "query": "iniciar Spec Growth en este repo",
+    "should_trigger": true
+  },
+  {
+    "query": "¿Cómo está el board? Mostrame qué está bloqueado.",
+    "should_trigger": true
+  },
+  {
+    "query": "Renombrá la variable tmp por temp en src/utils.js.",
+    "should_trigger": false
+  },
+  {
+    "query": "Corré los tests y pegame el output completo.",
+    "should_trigger": false
+  },
+  {
+    "query": "Hacé un commit con estos cambios.",
+    "should_trigger": false
+  }
+]

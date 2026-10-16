@@ -1,0 +1,7 @@
+status: accepted
+kind: feature
+targets: [src/offline.js, src/notes.js]
+tests: []
+accepted_by: "Fixture Owner"
+accepted_at: "2026-10-16"
+gitref: seed

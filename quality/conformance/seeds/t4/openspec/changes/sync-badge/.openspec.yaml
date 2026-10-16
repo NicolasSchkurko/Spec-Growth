@@ -1,0 +1,7 @@
+status: verified
+kind: feature
+targets: [src/sync.js]
+tests: [tests/sync.test.mjs]
+tech_brief: true
+accepted_by: "Fixture Owner"
+accepted_at: "2026-10-15"
