@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// Spec Growth — gate mecánico (v0.9).
-// Checks: parse · estados (enum) · reason/superseded_by · overlaps (contención+globs,
-//   severidad por trabajo activo; secuenciados por deps → warning) · [@test] · targets ·
-//   fix/refactor→regresión · conflictos ⚔ · waivers
-//   (granted vigente HABILITA; requested/vencido bloquean) · decisiones · conflictos · aceptación ·
-//   hallazgos · zonas protegidas (targets + archivos reales + ADR) · capacidades
-//   (case-insensitive) · requisitos/citas · deps · archivo · suite · evidencia
-//   (substituted ≠ verde) · --pre-archive · --scope.
-// Modos: [--root DIR] [--json] [--run-tests] [--tests-command "CMD"] [--pre-archive ID] [--diff BASE] [--scope ID]
-// Exit: 1 si hay errores, 0 si no. Escribe openspec/evidence.json.
+// Spec Growth — mechanical gate (v0.9).
+// Checks: parse · status/kind enums · reason/superseded_by · overlaps (containment+globs,
+//   severity by active work; deps-sequenced → warning) · [@test] · targets ·
+//   fix/refactor→regression · ⚔ conflicts · waivers
+//   (valid granted ENABLES; requested/expired block) · decisions · acceptance ·
+//   findings · protected zones (targets + real files + ADR) · capabilities
+//   (case-insensitive) · requirements/citations · deps · archive · suite · evidence
+//   (substituted ≠ green) · --pre-archive · --scope.
+// Modes: [--root DIR] [--json] [--run-tests] [--tests-command "CMD"] [--pre-archive ID] [--diff BASE] [--scope ID]
+// Exit: 1 if there are errors, 0 otherwise. Writes openspec/evidence.json.
 import { join, normalize, relative } from "node:path";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { execSync, execFileSync } from "node:child_process";
@@ -31,8 +31,8 @@ const scopeId = getVal("--scope");
 
 const root = normalize(getVal("--root") || lib.resolveRoot(process.cwd()) || process.cwd());
 if (!existsSync(join(root, "openspec", "changes"))) {
-  console.error(`No existe openspec/changes/ bajo: ${root}`);
-  console.error("Corré 'openspec init' primero, o pasá --root <dir> apuntando a la raíz del repo.");
+  console.error(`openspec/changes/ not found under: ${root}`);
+  console.error("Run 'openspec init' first, or pass --root <dir> pointing at the repo root.");
   process.exit(1);
 }
 
@@ -56,8 +56,8 @@ const warnings = [];
 const err = (msg, ids = []) => errors.push({ msg, ids });
 const warn = (msg, ids = []) => warnings.push({ msg, ids });
 
-// Un waiver "bloquea" si es requested, inválido, o granted sin owner/expires o vencido.
-// Un granted VIGENTE habilita (es un permiso) y no bloquea.
+// A waiver "blocks" if it is requested, invalid, or granted without owner/expires or expired.
+// A valid granted waiver ENABLES (it is a permission) and does not block.
 const blameWaiver = (w) => {
   const st = String(w.state || "").toLowerCase();
   if (st !== "granted") return true;
@@ -68,30 +68,30 @@ const blameWaiver = (w) => {
 };
 
 for (const ce of cfgErrors) {
-  warn(`config.yaml: línea ${ce.line} no interpretada — ${String(ce.text).slice(0, 60)}`);
+  warn(`config.yaml: line ${ce.line} not parsed — ${String(ce.text).slice(0, 60)}`);
 }
 {
   const tracked0 = lib.listTrackedFiles(root);
   if (tracked0 && tracked0.some((f) => lib.pathKey(f) === "openspec/evidence.json")) {
-    err("openspec/evidence.json está commiteado — la evidencia es local ('git rm --cached openspec/evidence.json')");
+    err("openspec/evidence.json is committed — evidence is local ('git rm --cached openspec/evidence.json')");
   }
 }
 
-// 0) parse: líneas no interpretables / carpetas sin proposal
+// 0) parse: unparsed lines / folders without proposal
 for (const pe of parseErrors) {
-  const where = pe.file && pe.line ? `${relative(root, pe.file)} línea ${pe.line}` : pe.file;
+  const where = pe.file && pe.line ? `${relative(root, pe.file)} line ${pe.line}` : pe.file;
   err(`${pe.id}: ${where} — ${pe.text.slice(0, 70)}`, [pe.id]);
 }
 
-// 1) enum de status/kind
+// 1) status/kind enums
 for (const c of changes) {
-  if (!STATUSES.includes(c.status)) err(`${c.id}: status inválido '${c.status}' (permitidos: ${STATUSES.join("|")})`, [c.id]);
-  if (!KINDS.includes(c.kind)) err(`${c.id}: kind inválido '${c.kind}' (permitidos: ${KINDS.join("|")})`, [c.id]);
+  if (!STATUSES.includes(c.status)) err(`${c.id}: invalid status '${c.status}' (allowed: ${STATUSES.join("|")})`, [c.id]);
+  if (!KINDS.includes(c.kind)) err(`${c.id}: invalid kind '${c.kind}' (allowed: ${KINDS.join("|")})`, [c.id]);
 }
 
-// 2) overlaps (case-insensitive; globs expandidos; severidad: error solo con trabajo activo)
-//    Excepción explícita: si los changes están secuenciados por deps (directo o transitivo),
-//    el solape es orden planificado → warning.
+// 2) overlaps (case-insensitive; expanded globs; severity: error only with active work)
+//    Explicit exception: if the changes are sequenced by deps (direct or transitive),
+//    the overlap is a planned order → warning.
 {
   const tracked = lib.listTrackedFiles(root);
   const byId = new Map(changes.map((c) => [c.id, c]));
@@ -130,25 +130,25 @@ for (const c of changes) {
       const k = [a.c.id, b.c.id].sort().join("|") + "::" + [a.key, b.key].sort().join(" ~ ");
       if (seen.has(k)) continue;
       seen.add(k);
-      const msg = `overlap: '${a.raw}' (${a.c.id}, ${a.c.status}) y '${b.raw}' (${b.c.id}, ${b.c.status}) se solapan`;
+      const msg = `overlap: '${a.raw}' (${a.c.id}, ${a.c.status}) and '${b.raw}' (${b.c.id}, ${b.c.status}) overlap`;
       const active = a.c.status === "applying" || b.c.status === "applying";
       if (active && !sequenced(a.c.id, b.c.id)) err(msg, [a.c.id, b.c.id]);
-      else if (active) warn(`${msg} — secuenciado por deps (orden declarado, no conflicto)`, [a.c.id, b.c.id]);
+      else if (active) warn(`${msg} — sequenced by deps (declared order, not a conflict)`, [a.c.id, b.c.id]);
       else warn(msg, [a.c.id, b.c.id]);
     }
   }
 }
 
-// 3) [@test]: existencia de rutas declaradas
+// 3) [@test]: declared paths exist
 for (const c of changes) {
   for (const file of lib.walkMd(join(c.dir, "specs"))) {
     for (const ref of lib.testRefsIn(file)) {
       if (ref.includes("*")) {
-        warn(`${c.id}: glob no soportado por el gate → ${ref}`, [c.id]);
+        warn(`${c.id}: glob not supported by the gate → ${ref}`, [c.id]);
         continue;
       }
       if (!existsSync(normalize(join(root, ref)))) {
-        const msg = `${c.id}: [@test] no existe → ${ref} (en ${relative(root, file)})`;
+        const msg = `${c.id}: [@test] does not exist → ${ref} (in ${relative(root, file)})`;
         if (["applying", "verified"].includes(c.status)) err(msg, [c.id]);
         else warn(msg, [c.id]);
       }
@@ -156,28 +156,28 @@ for (const c of changes) {
   }
 }
 
-// 4) targets existentes (aplicando/verificado): renombres sospechosos
+// 4) existing targets (applying/verified): suspect renames
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   for (const t of c.targets) {
-    if (!existsSync(normalize(join(root, t)))) warn(`${c.id}: target no existe en disco (¿renombrado?) → ${t}`, [c.id]);
+    if (!existsSync(normalize(join(root, t)))) warn(`${c.id}: target does not exist on disk (renamed?) → ${t}`, [c.id]);
   }
 }
 
-// 5) kind: fix/refactor requieren test de regresión (solo refs literales, no globs)
+// 5) kind: fix/refactor require a regression test (literal refs only, no globs)
 for (const c of changes) {
   if (c.kind !== "fix" && c.kind !== "refactor") continue;
   const refs = lib.walkMd(join(c.dir, "specs"))
     .flatMap((f) => lib.testRefsIn(f))
     .filter((r) => !r.includes("*"));
   if (!refs.length) {
-    const msg = `${c.id}: kind ${c.kind} sin ningún [@test] válido (regresión obligatoria; los globs no cuentan)`;
+    const msg = `${c.id}: kind ${c.kind} has no valid [@test] (regression required; globs don't count)`;
     if (ADVANCED.includes(c.status)) err(msg, [c.id]);
     else warn(msg, [c.id]);
   }
 }
 
-// 6) waivers (tipos válidos; granted vigente HABILITA; requested/vencido bloquean)
+// 6) waivers (valid types; valid granted ENABLES; requested/expired block)
 const WAIVER_TYPES = ["known-gap", "deferred-test", "pending-external-evidence", "frontier-stub"];
 const today = new Date();
 for (const c of changes) {
@@ -185,89 +185,89 @@ for (const c of changes) {
     const state = String(w.state || "").toLowerCase();
     const type = String(w.type || "?");
     if (!WAIVER_TYPES.includes(type)) {
-      err(`${c.id}: waiver con tipo inválido '${type}' (permitidos: ${WAIVER_TYPES.join("|")})`, [c.id]);
+      err(`${c.id}: waiver with invalid type '${type}' (allowed: ${WAIVER_TYPES.join("|")})`, [c.id]);
     }
     if (!["requested", "granted"].includes(state)) {
-      err(`${c.id}: waiver sin state válido (requested|granted) — tipo ${type}`, [c.id]);
+      err(`${c.id}: waiver without valid state (requested|granted) — type ${type}`, [c.id]);
       continue;
     }
     if (state === "requested") {
-      if (!w.reason) err(`${c.id}: waiver ${type} requested sin razón`, [c.id]);
-      warn(`${c.id}: waiver PENDIENTE (${type}, requested) — bloquea verified hasta tu decisión`, [c.id]);
+      if (!w.reason) err(`${c.id}: waiver ${type} requested without a reason`, [c.id]);
+      warn(`${c.id}: waiver PENDING (${type}, requested) — blocks verified until your decision`, [c.id]);
     } else {
-      if (!w.owner) err(`${c.id}: waiver ${type} granted sin owner`, [c.id]);
-      if (!w.expires) err(`${c.id}: waiver ${type} granted sin expires`, [c.id]);
+      if (!w.owner) err(`${c.id}: waiver ${type} granted without owner`, [c.id]);
+      if (!w.expires) err(`${c.id}: waiver ${type} granted without expires`, [c.id]);
       let stillValid = false;
       if (w.expires) {
         const expRaw = String(w.expires);
         const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(expRaw) ? expRaw + "T23:59:59" : expRaw);
-        if (Number.isNaN(d.getTime())) err(`${c.id}: waiver ${type} con expires inválido (${w.expires})`, [c.id]);
-        else if (d < today) err(`${c.id}: waiver ${type} VENCIDO (${w.expires})`, [c.id]);
+        if (Number.isNaN(d.getTime())) err(`${c.id}: waiver ${type} with invalid expires (${w.expires})`, [c.id]);
+        else if (d < today) err(`${c.id}: waiver ${type} EXPIRED (${w.expires})`, [c.id]);
         else {
           stillValid = Boolean(w.owner);
-          if (d - today < 14 * 86400000) warn(`${c.id}: waiver ${type} vence pronto (${w.expires})`, [c.id]);
+          if (d - today < 14 * 86400000) warn(`${c.id}: waiver ${type} expires soon (${w.expires})`, [c.id]);
           else if (d - today > 180 * 86400000) {
-            warn(`${c.id}: waiver ${type} con vigencia larga (>180 días) — ¿revisaste su motivo?`, [c.id]);
+            warn(`${c.id}: waiver ${type} with long validity (>180 days) — review its reason?`, [c.id]);
           }
         }
       }
-      if (stillValid) warn(`${c.id}: waiver VIGENTE (${type}, hasta ${w.expires})`, [c.id]);
+      if (stillValid) warn(`${c.id}: waiver IN FORCE (${type}, until ${w.expires})`, [c.id]);
     }
   }
   if (c.status === "verified") {
     const blocking = c.waivers.filter(blameWaiver);
-    if (blocking.length) err(`${c.id}: 'verified' con waiver(s) que bloquean (requested/vencidos)`, [c.id]);
+    if (blocking.length) err(`${c.id}: 'verified' with blocking waiver(s) (requested/expired)`, [c.id]);
   }
 }
 
-// 7) decisiones abiertas
+// 7) open decisions
 for (const c of changes) {
   for (const d of c.open_decisions) {
-    if (!d.question || !d.target) err(`${c.id}: decision request sin question/target`, [c.id]);
-    else warn(`${c.id}: DECISIÓN PENDIENTE — "${d.question}" (→ ${d.target})`, [c.id]);
+    if (!d.question || !d.target) err(`${c.id}: decision request without question/target`, [c.id]);
+    else warn(`${c.id}: DECISION PENDING — "${d.question}" (→ ${d.target})`, [c.id]);
   }
   if (c.status === "verified" && c.open_decisions.length) {
-    err(`${c.id}: 'verified' con decisión(es) pendiente(s)`, [c.id]);
+    err(`${c.id}: 'verified' with pending decision(s)`, [c.id]);
   }
 }
 
-// 7b) conflictos a aprobar: contradicen algo ya decidido/escrito → bloquea el cierre, no la implementación
+// 7b) conflicts to approve: they contradict something already decided/written → block closure, not implementation
 for (const c of changes) {
   for (const cf of c.conflicts) {
-    if (!cf.with || !cf.what) err(`${c.id}: conflicto sin 'with'/'what'`, [c.id]);
-    else warn(`${c.id}: ⚔ CONFLICTO a aprobar — "${cf.what}" (contra ${cf.with})${cf.proposal ? ` · propuesta: ${cf.proposal}` : ""}`, [c.id]);
+    if (!cf.with || !cf.what) err(`${c.id}: conflict without 'with'/'what'`, [c.id]);
+    else warn(`${c.id}: ⚔ CONFLICT to approve — "${cf.what}" (against ${cf.with})${cf.proposal ? ` · proposal: ${cf.proposal}` : ""}`, [c.id]);
   }
   if (c.status === "verified" && c.conflicts.length) {
-    err(`${c.id}: 'verified' con conflicto(s) sin aprobar`, [c.id]);
+    err(`${c.id}: 'verified' with unapproved conflict(s)`, [c.id]);
   }
 }
 
-// 8) rastro de aceptación, reason y superseded
+// 8) acceptance trace, reason and superseded
 for (const c of changes) {
   if (ADVANCED.includes(c.status) && (!c.accepted_by || !c.accepted_at)) {
-    warn(`${c.id}: sin rastro de aceptación (accepted_by / accepted_at)`, [c.id]);
+    warn(`${c.id}: missing acceptance trace (accepted_by / accepted_at)`, [c.id]);
   }
   if (c.status === "rejected" && !c.reason) {
-    err(`${c.id}: 'rejected' sin reason (¿por qué se rechazó?)`, [c.id]);
+    err(`${c.id}: 'rejected' without reason (why was it rejected?)`, [c.id]);
   }
   if (c.status === "superseded") {
-    if (!c.superseded_by) err(`${c.id}: 'superseded' sin superseded_by`, [c.id]);
+    if (!c.superseded_by) err(`${c.id}: 'superseded' without superseded_by`, [c.id]);
     else if (!changes.some((x) => x.id === c.superseded_by) && !archiveResolves(c.superseded_by)) {
-      warn(`${c.id}: superseded_by '${c.superseded_by}' no existe (ni activo ni archivado)`, [c.id]);
+      warn(`${c.id}: superseded_by '${c.superseded_by}' does not exist (neither active nor archived)`, [c.id]);
     }
   }
 }
 
-// 9) hallazgos abiertos del pase semántico
+// 9) open findings from the semantic pass
 for (const c of changes) {
   if (!["applying", "verified"].includes(c.status)) continue;
   const fp = join(c.dir, "findings.md");
   if (existsSync(fp) && /^- \[ \]/m.test(lib.readText(fp))) {
-    warn(`${c.id}: hallazgos abiertos en findings.md`, [c.id]);
+    warn(`${c.id}: open findings in findings.md`, [c.id]);
   }
 }
 
-// 10) zonas protegidas: matches por targets, globs muertos, y --diff (CI)
+// 10) protected zones: target matches, dead globs, and --diff (CI)
 for (const c of changes) {
   const hits = new Map();
   for (const t of c.targets) {
@@ -275,28 +275,28 @@ for (const c of changes) {
     if (z) hits.set(z.glob, t);
   }
   if (hits.size && !c.human_approved && !TERMINAL.includes(c.status)) {
-    const list = [...hits.entries()].map(([glob, t]) => `${t} (zona ${glob})`).join(" · ");
-    const msg = `${c.id}: toca zona protegida sin aprobación humana → ${list}`;
+    const list = [...hits.entries()].map(([glob, t]) => `${t} (zone ${glob})`).join(" · ");
+    const msg = `${c.id}: touches a protected zone without human approval → ${list}`;
     if (c.status === "applying") err(msg, [c.id]);
-    else if (c.status === "verified") warn(`${msg} — verified: regularizá con tu aprobación`, [c.id]);
-    else warn(`${msg} — requerirá aprobación`, [c.id]);
+    else if (c.status === "verified") warn(`${msg} — verified: regularize with your approval`, [c.id]);
+    else warn(`${msg} — will require approval`, [c.id]);
   }
 }
 {
   const tracked = lib.listTrackedFiles(root);
   if (!tracked && cfg.protectedZones.length) {
-    warn("zonas protegidas: no verificable sin git (globs muertos sin chequear)");
+    warn("protected zones: not verifiable without git (dead globs unchecked)");
   } else if (tracked && cfg.protectedZones.length) {
     for (const z of cfg.protectedZones) {
       const re = lib.globToRegExp(z.glob);
       const any = tracked.some((f) => re.test(lib.pathKey(f)) || re.test(lib.pathKey(f) + "/"));
-      if (!any) warn(`zona protegida sin archivos que matcheen: ${z.glob} (¿renombre? — protección muerta)`);
+      if (!any) warn(`protected zone with no matching files: ${z.glob} (renamed? — dead protection)`);
     }
   }
 }
 
-// ADR obligatorio para aprobaciones humanas: una línea con verbo de aprobación que mencione el id
-// como palabra completa (no substring; una línea de rechazo no aprueba).
+// ADR required for human approvals: a line with an approval verb that mentions the id
+// as a full word (not a substring; a rejection line does not approve).
 const adrApproves = (dec, id) => {
   const esc = String(id).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const reId = new RegExp(`(?:^|[^A-Za-z0-9_-])${esc}(?![A-Za-z0-9_-])`);
@@ -311,13 +311,13 @@ for (const c of changes) {
   const dec = existsSync(decPath) ? lib.readText(decPath) : "";
   if (!adrApproves(dec, c.id)) {
     err(
-      `${c.id}: human_approved sin ADR válido en DECISIONS.md (línea con 'aprobado'/'approved' que mencione '${c.id}' como palabra)`,
+      `${c.id}: human_approved without a valid ADR in DECISIONS.md (a line with 'approved'/'aprobado' mentioning '${c.id}' as a word)`,
       [c.id]
     );
   }
 }
 
-// Zonas sobre archivos REALES cambiados (working tree + staged), aunque los targets no matcheen el glob
+// Protected zones over REAL changed files (working tree + staged), even if targets don't match the glob
 if (!diffBase) {
   try {
     let changed = [];
@@ -334,7 +334,7 @@ if (!diffBase) {
             .filter(Boolean)
         );
       } catch {
-        /* sin git o sin HEAD */
+        /* no git or no HEAD */
       }
     }
     changed = [...new Set(changed)];
@@ -342,14 +342,14 @@ if (!diffBase) {
       const z = lib.matchZones(f, cfg.protectedZones);
       if (!z) continue;
       const owners = changes.filter((c) => !TERMINAL.includes(c.status) && c.targets.some((t) => lib.pathCoveredBy(f, t)));
-      if (!owners.length) err(`archivo protegido modificado sin change que lo reclame → ${f} (zona ${z.glob})`);
+      if (!owners.length) err(`protected file modified with no change claiming it → ${f} (zone ${z.glob})`);
       else
         for (const o of owners) {
-          if (!o.human_approved) err(`${o.id}: modifica archivo protegido sin aprobación → ${f} (zona ${z.glob})`, [o.id]);
+          if (!o.human_approved) err(`${o.id}: modifies a protected file without approval → ${f} (zone ${z.glob})`, [o.id]);
         }
     }
   } catch {
-    /* sin git */
+    /* no git */
   }
 }
 if (diffBase) {
@@ -366,29 +366,29 @@ if (diffBase) {
       usedFallback = range === diffBase;
       break;
     } catch {
-      /* probar el siguiente rango */
+      /* try the next range */
     }
   }
   if (!ok) {
-    warn(`--diff ${diffBase}: no se pudo obtener el diff (¿git? ¿ref?)`);
+    warn(`--diff ${diffBase}: could not obtain the diff (git? ref?)`);
   } else {
-    if (usedFallback) warn(`--diff: no se pudo usar ${diffBase}...HEAD; se usó 'git diff ${diffBase}' (incluye working tree)`);
+    if (usedFallback) warn(`--diff: could not use ${diffBase}...HEAD; used 'git diff ${diffBase}' (includes working tree)`);
     for (const f of changed) {
       const z = lib.matchZones(f, cfg.protectedZones);
       if (!z) continue;
       const owners = changes.filter((c) => !TERMINAL.includes(c.status) && c.targets.some((t) => lib.pathCoveredBy(f, t)));
       if (!owners.length) {
-        err(`--diff: archivo protegido modificado sin change que lo reclame → ${f} (zona ${z.glob})`);
+        err(`--diff: protected file modified with no change claiming it → ${f} (zone ${z.glob})`);
         continue;
       }
       for (const o of owners) {
-        if (!o.human_approved) err(`--diff: ${o.id} toca archivo protegido sin aprobación → ${f} (zona ${z.glob})`, [o.id]);
+        if (!o.human_approved) err(`--diff: ${o.id} touches a protected file without approval → ${f} (zone ${z.glob})`, [o.id]);
       }
     }
   }
 }
 
-// 11) capacidades: vivas + deltas
+// 11) capabilities: living + deltas
 {
   const caps = new Map();
   const pushCap = (id, source, path, status) => {
@@ -406,17 +406,17 @@ if (diffBase) {
   for (const [id, entries] of caps) {
     const living = entries.filter((e) => e.source === "living");
     const deltas = entries.filter((e) => e.source !== "living");
-    if (living.length > 1) err(`capacidad duplicada ${id} (specs vivas): ${living.map((e) => e.path).join(" · ")}`);
+    if (living.length > 1) err(`duplicate capability ${id} (living specs): ${living.map((e) => e.path).join(" · ")}`);
     for (const d of deltas) {
       if (!living.length) continue;
-      const msg = `capacidad duplicada ${id}: delta de '${d.source}' vs spec viva (${d.path})`;
+      const msg = `duplicate capability ${id}: delta from '${d.source}' vs living spec (${d.path})`;
       if (ADVANCED.includes(d.status)) err(msg, [d.source]);
       else warn(msg, [d.source]);
     }
     for (let a = 0; a < deltas.length; a++) {
       for (let b = a + 1; b < deltas.length; b++) {
         if (deltas[a].source === deltas[b].source) continue;
-        const msg = `capacidad duplicada ${id}: '${deltas[a].source}' y '${deltas[b].source}' la proveen`;
+        const msg = `duplicate capability ${id}: '${deltas[a].source}' and '${deltas[b].source}' both provide it`;
         const both = ADVANCED.includes(deltas[a].status) && ADVANCED.includes(deltas[b].status);
         if (both) err(msg, [deltas[a].source, deltas[b].source]);
         else warn(msg, [deltas[a].source, deltas[b].source]);
@@ -425,15 +425,15 @@ if (diffBase) {
   }
 }
 
-// 12) requisitos y citas (opcional: se activa si el repo usa IDs [REQ-...])
+// 12) requirements and citations (optional: activates when the repo uses [REQ-...] IDs)
 const rel = (f) => relative(root, f);
 const livingIds = new Map();
 for (const f of lib.walkMd(join(root, "openspec", "specs"))) {
   const seen = new Set();
   for (const id of lib.requirementIdsIn(lib.readText(f))) {
-    if (seen.has(id)) err(`${rel(f)}: ID de requisito duplicado en el archivo → ${id}`);
+    if (seen.has(id)) err(`${rel(f)}: duplicate requirement ID in file → ${id}`);
     seen.add(id);
-    if (livingIds.has(id)) err(`ID de requisito duplicado entre specs vivas → ${id} (${rel(livingIds.get(id))} y ${rel(f)})`);
+    if (livingIds.has(id)) err(`duplicate requirement ID across living specs → ${id} (${rel(livingIds.get(id))} and ${rel(f)})`);
     else livingIds.set(id, f);
   }
 }
@@ -445,14 +445,14 @@ for (const c of changes) {
   for (const f of lib.walkMd(join(c.dir, "specs"))) {
     const seen = new Set();
     for (const id of lib.requirementIdsIn(lib.readText(f))) {
-      if (seen.has(id)) err(`${c.id}: ID de requisito duplicado en el archivo → ${id} (${rel(f)})`, [c.id]);
+      if (seen.has(id)) err(`${c.id}: duplicate requirement ID in file → ${id} (${rel(f)})`, [c.id]);
       seen.add(id);
       map.set(id, f);
     }
   }
   for (const id of map.keys()) {
     if (idOwner.has(id) && idOwner.get(id) !== c.id) {
-      warn(`ID ${id} tocado por dos cambios activos (${idOwner.get(id)}, ${c.id})`, [c.id]);
+      warn(`ID ${id} touched by two active changes (${idOwner.get(id)}, ${c.id})`, [c.id]);
     } else {
       idOwner.set(id, c.id);
     }
@@ -463,7 +463,7 @@ const allIds = new Set([
   ...changes.filter((c) => ADVANCED.includes(c.status)).flatMap((c) => [...(changeIds.get(c.id) || new Map()).keys()]),
 ]);
 for (const c of changes) {
-  // Citas: archivos del change; si un target es directorio, se expande a sus archivos de código.
+  // Citations: change files; a directory target expands to its code files.
   const files = [];
   for (const t of [...c.targets, ...c.tests]) {
     const p = normalize(join(root, t));
@@ -481,7 +481,7 @@ for (const c of changes) {
   for (const f of files) cites.push(...lib.citationsIn(lib.readText(f)));
   for (const id of cites) {
     if (!allIds.has(id)) {
-      const msg = `${c.id}: cita rota @cita ${id} — no existe ese requisito (posible alucinación)`;
+      const msg = `${c.id}: broken citation @cita ${id} — no such requirement (possible hallucination)`;
       if (["applying", "verified"].includes(c.status)) err(msg, [c.id]);
       else warn(msg, [c.id]);
     }
@@ -489,12 +489,12 @@ for (const c of changes) {
   if (cites.length) {
     const cited = new Set(cites);
     for (const id of (changeIds.get(c.id) || new Map()).keys()) {
-      if (!cited.has(id)) warn(`${c.id}: requisito sin cita en sus archivos → ${id}`, [c.id]);
+      if (!cited.has(id)) warn(`${c.id}: requirement without citation in its files → ${id}`, [c.id]);
     }
   }
 }
 
-// 13) deps: change activo verificado, carpeta archivada o digest compactado
+// 13) deps: verified active change, archived folder, or compacted digest
 {
   const activeById = new Map(changes.map((c) => [c.id, c]));
   for (const c of changes) {
@@ -502,15 +502,15 @@ for (const c of changes) {
       const depStr = String(dep);
       const act = activeById.get(depStr);
       if (act) {
-        if (act.status !== "verified") warn(`${c.id}: dep '${depStr}' activa pero en estado '${act.status}' (no verificada)`, [c.id]);
+        if (act.status !== "verified") warn(`${c.id}: dep '${depStr}' is active but in state '${act.status}' (not verified)`, [c.id]);
       } else if (!archiveResolves(depStr)) {
-        err(`${c.id}: dep '${depStr}' no existe (ni activa, ni archivada, ni compactada)`, [c.id]);
+        err(`${c.id}: dep '${depStr}' does not exist (not active, not archived, not compacted)`, [c.id]);
       }
     }
   }
 }
 
-// 14) archivo: waivers/decisiones sin cerrar en changes archivados
+// 14) archive: unclosed waivers/decisions in archived changes
 {
   const archiveDir = join(root, "openspec", "changes", "archive");
   if (existsSync(archiveDir)) {
@@ -536,24 +536,24 @@ for (const c of changes) {
           const exp = expRaw ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(expRaw) ? expRaw + "T23:59:59" : expRaw) : null;
           return !exp || Number.isNaN(exp.getTime()) || exp < new Date();
         });
-        warn(`archivo ${name}: ${ws.length} waiver(s) registrados sin cerrar${expired.length ? ` (${expired.length} VENCIDO/s)` : ""}`);
+        warn(`archive ${name}: ${ws.length} registered waiver(s) unclosed${expired.length ? ` (${expired.length} EXPIRED)` : ""}`);
       }
-      if (ds.length) warn(`archivo ${name}: ${ds.length} decisión(es) pendiente(s) al archivar`);
-      if (cs.length) warn(`archivo ${name}: ${cs.length} conflicto(s) sin aprobar al archivar`);
+      if (ds.length) warn(`archive ${name}: ${ds.length} decision(s) pending at archive time`);
+      if (cs.length) warn(`archive ${name}: ${cs.length} conflict(s) unapproved at archive time`);
     }
   }
 }
 
-// 15) suite de tests (opcional; --tests-command NO produce verde — ver evidencia)
+// 15) test suite (optional; --tests-command does NOT produce green — see evidence)
 let testsRecord = null;
 const substituted = Boolean(explicitCmd);
 if (wantTests) {
   if (explicitCmd && process.env.CI) {
-    err("--tests-command prohibido en CI — usá test_command (config) con --run-tests");
+    err("--tests-command forbidden in CI — use test_command (config) with --run-tests");
   } else if (!testsCmd) {
-    warn("--run-tests sin test_command configurado (openspec/config.yaml: test_command)");
+    warn("--run-tests without test_command configured (openspec/config.yaml: test_command)");
   } else if (/[;|&`$<>]/.test(testsCmd) && process.env.SPEC_GROWTH_ALLOW_SHELL_CMD !== "1") {
-    err(`test_command con metacaracteres requiere SPEC_GROWTH_ALLOW_SHELL_CMD=1 — ${testsCmd}`);
+    err(`test_command with metacharacters requires SPEC_GROWTH_ALLOW_SHELL_CMD=1 — ${testsCmd}`);
   } else {
     let exit = 0;
     let tail = "";
@@ -569,7 +569,7 @@ if (wantTests) {
     } catch (e) {
       if (e && (e.code === "ENOBUFS" || e.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER")) {
         exit = 1;
-        tail = "salida excedió maxBuffer (64MB)";
+        tail = "output exceeded maxBuffer (64MB)";
       } else {
         exit = e && typeof e.status === "number" ? e.status : 1;
         tail = (e && e.stdout ? e.stdout.toString() : "") + (e && e.stderr ? e.stderr.toString() : "");
@@ -577,23 +577,23 @@ if (wantTests) {
     }
     testsRecord = { command: testsCmd, exit, substituted };
     if (exit !== 0) {
-      err(`suite de tests ROJA — ${testsCmd}`); // global: no degradable por --scope
+      err(`test suite RED — ${testsCmd}`); // global: not degradable by --scope
       const lines = tail.split(/\r?\n/).filter(Boolean);
       const last = lines.slice(-15).join("\n");
-      if (last) warnings.push({ msg: `últimas líneas de la suite:\n${last}`, ids: [] });
+      if (last) warnings.push({ msg: `last lines of the suite:\n${last}`, ids: [] });
     }
   }
 }
 
-// 15b) --scope <id>: validación temprana (el filtro real corre al FINAL, solo sobre el reporte)
+// 15b) --scope <id>: early validation (the real filter runs at the END, over the report only)
 if (scopeId && !changes.some((c) => c.id === scopeId)) {
-  err(`--scope: no existe el change '${scopeId}'`);
+  err(`--scope: change '${scopeId}' does not exist`);
 }
 
-// (re-lectura cerca del uso y la escritura: minimiza lost-update con hook/otro agente)
+// (re-read close to use and write: minimizes lost-update with hook/another agent)
 const prevEvidence = lib.readEvidence(root);
 
-// 16) evidencia: merge por-change (sin acoplamiento global); substituted != verde
+// 16) evidence: per-change merge (no global coupling); substituted != green
 const now = new Date().toISOString();
 const currentOk = (c) => !errors.some((e) => e.ids.includes(c.id)) && (!testsRecord || testsRecord.exit === 0);
 const staleMemo = new Map();
@@ -611,8 +611,8 @@ function targetStaleness(c) {
   staleMemo.set(c.id, res);
   return res;
 }
-// Verde: solo de una corrida real (--run-tests sin sustitución), verde y sin errores del change.
-// Si el green previo sigue vigente para el estado actual, se conserva (no refresca).
+// Green: only from a real run (--run-tests without substitution), green and error-free for the change.
+// If the previous green is still valid for the current state, it is kept (not refreshed).
 function mergedGreen(c) {
   const prevGreen =
     (prevEvidence && prevEvidence.changes && prevEvidence.changes[c.id] && prevEvidence.changes[c.id].green_tests) || null;
@@ -626,51 +626,51 @@ function mergedGreen(c) {
 }
 for (const c of changes) {
   if (c.status !== "verified") continue;
-  if (!c.targets.length) warn(`${c.id}: verified sin targets declarados (frescura no evaluable)`, [c.id]);
+  if (!c.targets.length) warn(`${c.id}: verified without declared targets (freshness not evaluable)`, [c.id]);
   const green = mergedGreen(c);
   if (!green) {
-    const msg = `${c.id}: 'verified' sin evidencia verde local — corré 'gate-check --run-tests'`;
+    const msg = `${c.id}: 'verified' without local green evidence — run 'gate-check --run-tests'`;
     if (testsRecord) err(msg, [c.id]);
-    else warn(`${msg} (en estático es aviso; en pre-archive es error)`, [c.id]);
+    else warn(`${msg} (in static mode it's a warning; in pre-archive it's an error)`, [c.id]);
     continue;
   }
   const st = targetStaleness(c);
-  if (st.allNull) warn(`${c.id}: frescura de evidencia no verificable (git ausente/shallow)`, [c.id]);
+  if (st.allNull) warn(`${c.id}: evidence freshness not verifiable (git absent/shallow)`, [c.id]);
   else if (st.maxTs && st.maxTs > Date.parse(green.at)) {
-    warn(`${c.id}: evidencia VIEJA (el código cambió después de la última corrida verde)`, [c.id]);
+    warn(`${c.id}: STALE evidence (code changed after the last green run)`, [c.id]);
   }
 }
 
-// 17) pre-archive <id>: precondiciones de archivado
+// 17) pre-archive <id>: archive preconditions
 let preArchiveResult = null;
 if (preArchiveId) {
   const c = changes.find((x) => x.id === preArchiveId);
   if (!c) {
-    err(`pre-archive: no existe el change '${preArchiveId}'`);
+    err(`pre-archive: change '${preArchiveId}' does not exist`);
   } else {
-    if (c.status !== "verified") err(`pre-archive ${c.id}: status '${c.status}' — se requiere verified`, [c.id]);
+    if (c.status !== "verified") err(`pre-archive ${c.id}: status '${c.status}' — verified required`, [c.id]);
     const blockingW = c.waivers.filter(blameWaiver);
-    if (blockingW.length) err(`pre-archive ${c.id}: ${blockingW.length} waiver(s) que bloquean (requested/vencidos)`, [c.id]);
-    if (c.open_decisions.length) err(`pre-archive ${c.id}: ${c.open_decisions.length} decisión(es) pendiente(s)`, [c.id]);
-    if (c.conflicts.length) err(`pre-archive ${c.id}: ${c.conflicts.length} conflicto(s) sin aprobar`, [c.id]);
+    if (blockingW.length) err(`pre-archive ${c.id}: ${blockingW.length} blocking waiver(s) (requested/expired)`, [c.id]);
+    if (c.open_decisions.length) err(`pre-archive ${c.id}: ${c.open_decisions.length} pending decision(s)`, [c.id]);
+    if (c.conflicts.length) err(`pre-archive ${c.id}: ${c.conflicts.length} unapproved conflict(s)`, [c.id]);
     const findingsPath = join(c.dir, "findings.md");
     if (existsSync(findingsPath) && /^- \[ \]/m.test(lib.readText(findingsPath))) {
-      warn(`pre-archive ${c.id}: hallazgos abiertos en findings.md (¿los resolviste?)`, [c.id]);
+      warn(`pre-archive ${c.id}: open findings in findings.md (did you resolve them?)`, [c.id]);
     }
     const green = mergedGreen(c);
     if (c.status === "verified") {
       if (!green) {
-        err(`pre-archive ${c.id}: sin evidencia verde — corré 'gate-check --run-tests' antes de archivar`, [c.id]);
+        err(`pre-archive ${c.id}: no green evidence — run 'gate-check --run-tests' before archiving`, [c.id]);
       } else {
         const st = targetStaleness(c);
         if (st.maxTs && st.maxTs > Date.parse(green.at)) {
-          err(`pre-archive ${c.id}: evidencia verde VIEJA — re-corré 'gate-check --run-tests' antes de archivar`, [c.id]);
+          err(`pre-archive ${c.id}: STALE green evidence — re-run 'gate-check --run-tests' before archiving`, [c.id]);
         }
       }
     }
     const refCandidate = c.merged_as || c.gitref;
     if (!refCandidate) {
-      warn(`pre-archive ${c.id}: sin gitref ni merged_as — merge no verificable`, [c.id]);
+      warn(`pre-archive ${c.id}: no gitref or merged_as — merge not verifiable`, [c.id]);
     } else {
       const anc = lib.gitIsAncestor(root, refCandidate);
       if (anc === true) {
@@ -686,7 +686,7 @@ if (preArchiveId) {
         }
         const uniq = [...new Set(concrete)];
         if (!uniq.length) {
-          err(`pre-archive ${c.id}: sin archivos concretos para verificar el merge (targets vacíos o globs sin match)`, [c.id]);
+          err(`pre-archive ${c.id}: no concrete files to verify the merge (empty targets or unmatched globs)`, [c.id]);
         } else {
           try {
             const diffOut = execFileSync("git", ["diff", "--name-only", `${refCandidate}..HEAD`, "--", ...uniq], {
@@ -696,31 +696,31 @@ if (preArchiveId) {
               .toString()
               .trim();
             if (diffOut) {
-              err(`pre-archive ${c.id}: '${refCandidate}' no contiene el estado actual de los targets (¿archivado previo al merge real?)`, [c.id]);
+              err(`pre-archive ${c.id}: '${refCandidate}' does not contain the current state of the targets (archived before the real merge?)`, [c.id]);
             }
           } catch {
-            warn(`pre-archive ${c.id}: no se pudo comparar contenido contra '${refCandidate}'`, [c.id]);
+            warn(`pre-archive ${c.id}: could not compare content against '${refCandidate}'`, [c.id]);
           }
         }
       } else if (anc === false) {
-        if (c.merged_as) err(`pre-archive ${c.id}: merged_as ${c.merged_as} no es ancestro de HEAD`, [c.id]);
+        if (c.merged_as) err(`pre-archive ${c.id}: merged_as ${c.merged_as} is not an ancestor of HEAD`, [c.id]);
         else {
           err(
-            `pre-archive ${c.id}: gitref ${c.gitref} no es ancestro de HEAD (¿sin mergear? — con squash-merge: 'merged_as: <sha del commit squash>')`,
+            `pre-archive ${c.id}: gitref ${c.gitref} is not an ancestor of HEAD (not merged? — for squash-merge: 'merged_as: <squash commit sha>')`,
             [c.id]
           );
         }
       } else {
         const head = lib.gitHead(root);
-        if (head) err(`pre-archive ${c.id}: ${c.merged_as ? "merged_as" : "gitref"} '${refCandidate}' inválido o ambiguo (git presente, la ref no resuelve)`, [c.id]);
-        else warn(`pre-archive ${c.id}: no se pudo verificar el merge (¿git?)`, [c.id]);
+        if (head) err(`pre-archive ${c.id}: ${c.merged_as ? "merged_as" : "gitref"} '${refCandidate}' invalid or ambiguous (git present, ref does not resolve)`, [c.id]);
+        else warn(`pre-archive ${c.id}: could not verify the merge (git?)`, [c.id]);
       }
     }
     preArchiveResult = { id: c.id, ok: !errors.some((e) => e.ids.includes(c.id)) };
   }
 }
 
-// evidencia (merge: conserva la última corrida verde por change)
+// evidence (merge: keeps the last green run per change)
 const changesEv = {};
 for (const c of changes) {
   const prevRec = (prevEvidence && prevEvidence.changes && prevEvidence.changes[c.id]) || {};
@@ -739,16 +739,16 @@ const evidence = {
 };
 lib.writeEvidence(root, evidence);
 
-// scope: SOLO afecta el reporte y el exit; la evidencia y gate_ok se calcularon SIN filtrar
+// scope: affects ONLY the report and exit; evidence and gate_ok were computed UNFILTERED
 if (scopeId) {
   const inScope = (e) => e.ids.length === 0 || e.ids.includes(scopeId);
   for (const e of errors.filter((x) => !inScope(x))) {
-    warnings.push({ msg: `(fuera de scope: ${e.ids.join(", ")}) ${e.msg}`, ids: e.ids });
+    warnings.push({ msg: `(out of scope: ${e.ids.join(", ")}) ${e.msg}`, ids: e.ids });
   }
   errors.splice(0, errors.length, ...errors.filter(inScope));
 }
 
-// reporte
+// report
 const errorMsgs = errors.map((e) => e.msg);
 const warnMsgs = warnings.map((w) => w.msg);
 if (asJson) {
@@ -767,17 +767,17 @@ if (asJson) {
     )
   );
 } else {
-  console.log(`Spec Growth · gate-check (${evidence.mode})${scopeId ? ` · scope: ${scopeId}` : ""} — ${changes.length} change(s) activo(s)`);
-  console.log(`Errores: ${errors.length} · Warnings: ${warnings.length}\n`);
+  console.log(`Spec Growth · gate-check (${evidence.mode})${scopeId ? ` · scope: ${scopeId}` : ""} — ${changes.length} active change(s)`);
+  console.log(`Errors: ${errors.length} · Warnings: ${warnings.length}\n`);
   if (errorMsgs.length) console.log(errorMsgs.map((e) => `  ✖ ${e}`).join("\n") + "\n");
   if (warnMsgs.length) console.log(warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
   if (preArchiveResult) {
     console.log(
       preArchiveResult.ok
-        ? `PRE-ARCHIVE ${preArchiveResult.id}: OK — podés archivar (openspec archive ${preArchiveResult.id})`
-        : `PRE-ARCHIVE ${preArchiveResult.id}: BLOQUEADO — resolvé los errores de arriba`
+        ? `PRE-ARCHIVE ${preArchiveResult.id}: OK — you can archive (openspec archive ${preArchiveResult.id})`
+        : `PRE-ARCHIVE ${preArchiveResult.id}: BLOCKED — fix the errors above`
     );
   }
-  console.log(errors.length ? "GATE ROJO — corregir antes de commitear/mergear." : "GATE VERDE.");
+  console.log(errors.length ? "GATE RED — fix before committing/merging." : "GATE GREEN.");
 }
 process.exit(errors.length ? 1 : 0);

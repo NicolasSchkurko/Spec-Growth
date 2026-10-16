@@ -1,28 +1,28 @@
 schema: spec-anchored
 
-# Comando de tests del proyecto. Lo usa `gate-check --run-tests` para registrar evidencia real.
-# Ejemplos: "./gradlew test" (Linux/macOS) · "gradlew.bat test" (Windows) · "npm test" · "pytest -q"
+# Project test command. Used by `gate-check --run-tests` to record real evidence.
+# Examples: "./gradlew test" (Linux/macOS) · "gradlew.bat test" (Windows) · "npm test" · "pytest -q"
 # test_command: ""
 
 context: |
-  <!-- Completar: stack del proyecto, convenciones y cómo correr los tests -->
+  <!-- Fill in: project stack, conventions and how to run the tests -->
 
 rules:
   proposal:
-    - Declarar kind (fix|feature|architecture|refactor), targets, tests y deps en .openspec.yaml
-    - Corto: por qué y qué. El cómo va en design.md, solo si kind=architecture
+    - Declare kind (fix|feature|architecture|refactor), targets, tests and deps in .openspec.yaml
+    - Short: why and what. The how goes in design.md, only if kind=architecture
   specs:
-    - Requirements en SHALL; escenarios WHEN/THEN concretos
-    - Cada requirement lleva una línea [@test] con la ruta del test que lo verifica
+    - Requirements in SHALL; concrete WHEN/THEN scenarios
+    - Every requirement carries a [@test] line with the path of the test verifying it
   tasks:
-    - Checklist verificable; tareas pequeñas, cada una completable y probable
+    - Verifiable checklist; small tasks, each one completable and probable
 
-# Zonas protegidas: cambios que tocan estos globs requieren aprobación humana explícita
-# (llave `human_approved: true` en el change, indicada por el humano). Se ven en BOARD.md.
-# Ejemplo:
+# Protected zones: changes touching these globs require explicit human approval
+# (`human_approved: true` in the change, indicated by the human). They show up in BOARD.md.
+# Example:
 # protected:
 #   - glob: "app/src/main/**/storage/**"
-#     reason: "persistencia — datos del usuario"
+#     reason: "persistence — user data"
 #   - glob: "**/auth/**"
-#     reason: "autenticación"
+#     reason: "authentication"
 protected: []

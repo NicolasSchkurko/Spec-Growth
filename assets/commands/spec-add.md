@@ -1,35 +1,35 @@
 ---
-description: Spec Growth — agregar un cambio (spec) al sistema, con alternativas, resultado esperado, zonas protegidas y decisiones
+description: Spec Growth — add a change (spec) with alternatives, expected outcome, protected zones and decisions
 ---
 
-Estás operando el sistema **Spec Growth** en este repositorio (cargá la skill `spec-growth` si necesitás el detalle). Objetivo: crear un change nuevo en `openspec/changes/` a partir de: "$ARGUMENTS". **NO escribir código en este paso.**
+You are operating the **Spec Growth** system in this repository (load the `spec-growth` skill if you need details). Goal: create a new change under `openspec/changes/` from: "$ARGUMENTS". **Do NOT write code in this step.**
 
-1. **Contexto**: leé `BOARD.md` y `openspec/board.json` (registry de capacidades). Si está disponible el grafo de código (codebase-memory), consultalo para el stack existente; si no, leé `openspec/specs/` relevante (y sus IDs `[REQ-…]`) y las dependencias del proyecto.
+1. **Context**: read `BOARD.md` and `openspec/board.json` (capability registry). If the code graph (codebase-memory) is available, consult it for the existing stack; otherwise read the relevant `openspec/specs/` (and their `[REQ-…]` IDs) and the project dependencies.
 
-2. **Clarificá** (máx 4 preguntas): qué y para quién; criterio de aceptación. Elegí `kind` = `fix` | `feature` | `architecture` | `refactor` y explicá la elección en una línea (un `refactor` no cambia comportamiento: su prueba es la suite verde + `[@test]` de regresión). Para `feature`/`architecture`, agregá la pregunta de **resultado**: *"¿qué resultado esperás y cómo sabremos si valió la pena?"* — se registra como "Resultado esperado" en `proposal.md`; si no hay respuesta clara, anotalo como duda (no bloquea).
+2. **Clarify** (max 4 questions): what and for whom; acceptance criteria. Choose `kind` = `fix` | `feature` | `architecture` | `refactor` and justify it in one line (a `refactor` does not change behavior: its proof is the green suite + a regression `[@test]`). For `feature`/`architecture`, ask for the **outcome**: *"what result do you expect and how will we know it was worth it?"* — recorded as "Expected outcome" in `proposal.md`; if unclear, note it as an open doubt (it does not block).
 
-3. **Alternativas técnicas** — obligatorio cuando el pedido **embebe una decisión técnica** ("usar SQLite", "con tal librería", "todo en el cliente"); omitir solo en `kind: fix` trivial. Si aplica:
-   - **Opción 0 — reutilizar**: buscá en el registry de capacidades (`provides: [cap:x]` en las specs) y en el grafo: ¿ya existe algo que resuelve esto? Si existe: *"use contract, do not rebuild"*.
-   - Proponé **2-3 alternativas** (incluida la pedida) evaluadas contra: requisitos; tamaño y contexto real del repo (ej.: si guarda muchísimos datos, contrastar SQLite vs MySQL/Postgres con esa evidencia); costo; riesgos; reversibilidad; y qué zonas/invariantes toca.
-   - Presentá una **tabla corta** (opción · por qué sí · por qué no · recomendación) y preguntá al humano cuál queda. **La decisión es humana.**
-   - Si existe una decisión que **no es tu autoridad** y el humano aún no decidió: registrala como **decision request** (`open_decisions: [{question, target, proposal}]`).
-   - Si el pedido **contradice algo ya decidido o escrito** (un ADR de `DECISIONS.md`, un requisito vivo, un waiver vigente): registrá un **conflicto ⚔** (`conflicts: [{with, what, proposal}]`) — se aprueba explícitamente (reversión + ADR) antes de `verified`.
-   - Registrá el resultado: sección "Alternativas consideradas" en `proposal.md`; si es decisión de arquitectura real → evaluá subir a `kind: architecture` + ADR en `DECISIONS.md`.
+3. **Technical alternatives** — mandatory when the request **embeds a technical decision** ("use SQLite", "with library X", "all client-side"); skip only for a trivial `fix`. If it applies:
+   - **Option 0 — reuse**: search the capability registry (`provides: [cap:x]`) and the graph: does something already solve this? If so: "use contract, do not rebuild".
+   - Propose **2–3 alternatives** (including the requested one) evaluated against: requirements; actual repo size/context (e.g., if it stores huge amounts of data, contrast SQLite vs MySQL/Postgres with that evidence); cost; risks; reversibility; which zones/invariants it touches.
+   - Present a **short table** (option · why yes · why not · recommendation) and ask the human to choose. **The decision is human.**
+   - If a decision **exceeds your authority** and the human has not decided: record an **open decision** (`open_decisions: [{question, target, proposal}]`).
+   - If the request **contradicts something already decided or written** (an ADR in `DECISIONS.md`, a living requirement, an in-force waiver): record a **⚔ conflict** (`conflicts: [{with, what, proposal}]`) — it is approved explicitly (reversal + ADR) before `verified`.
+   - Record the result: an "Alternatives considered" section in `proposal.md`; if it is a real architecture decision → consider `kind: architecture` + an ADR in `DECISIONS.md`.
 
-4. **Zonas protegidas**: con los `targets` definidos, cruzalos contra `protected:` de `openspec/config.yaml`. Si tocan una zona: avisá *"🔒 esto va a requerir tu aprobación explícita (human_approved)"*.
+4. **Protected zones**: cross the `targets` against `protected:` in `openspec/config.yaml`. If they touch a zone: warn *"🔒 this will require your explicit approval (human_approved)"*.
 
-5. **Creá el change**: `openspec new change <id-kebab>` (schema `spec-anchored`). Redactá:
-   - `proposal.md`: por qué + qué (corto) + "Resultado esperado" (si aplicó) + "Alternativas consideradas" (si aplicaron).
-   - `specs/<capacidad>/spec.md`: delta con Requirements (SHALL) y escenarios WHEN/THEN. **Cada requirement lleva una línea `[@test] <ruta-al-test>`.** Si el proyecto usa **IDs de requisito** (mirá las specs vivas), asigná `[REQ-<capacidad>-<n>]` a los nuevos y conservá el ID de los existentes. Los tests/código pueden citarlos con `@cita REQ-…` (opcional; habilita el detector de citas rotas/alucinaciones).
-   - `tasks.md`: checklist verificable. Si el cambio es grande, proponé la **primera rebanada vertical más riesgosa** (hardest-first).
-   - `design.md`: SOLO si `kind: architecture`.
+5. **Create the change**: `openspec new change <kebab-id>` (schema `spec-anchored`). Write:
+   - `proposal.md`: why + what (short) + "Expected outcome" (if applicable) + "Alternatives considered" (if applicable).
+   - `specs/<capability>/spec.md`: delta with Requirements (SHALL) and concrete WHEN/THEN scenarios. **Every requirement carries a `[@test] <path>` line.** If the project uses **requirement IDs** (check living specs), assign `[REQ-<capability>-<n>]` to new ones and preserve existing IDs. Tests/code may cite them with `@cita REQ-…` (optional; enables the broken-citation/hallucination detector).
+   - `tasks.md`: verifiable checklist. If large, propose the **riskiest first vertical slice** (hardest-first).
+   - `design.md`: ONLY if `kind: architecture`.
 
-6. **Metadata**: completá `.openspec.yaml` con `kind`, `targets`, `tests`, `deps`, `gitref: <git rev-parse --short HEAD>`; `waivers` / `open_decisions` / `conflicts` solo si aplican.
+6. **Metadata**: fill `.openspec.yaml` with `kind`, `targets`, `tests`, `deps`, `gitref: <git rev-parse --short HEAD>`; `waivers` / `open_decisions` / `conflicts` only when they apply.
 
-7. **Conflictos**: si otro change activo reclama un `target` en común, avisar y proponer plan. Si declarás la **dependencia** (`deps`), el gate trata el overlap como **secuenciado** (warning, no error); si son independientes, secuencialos o replanificá.
+7. **Overlaps**: if another active change claims a shared `target`, warn and propose a plan. If you declare the **dependency** (`deps`), the gate treats the overlap as **sequenced** (warning, not error); if independent, sequence them or replan.
 
-8. **Validar y tablero**: `openspec validate <id> --strict` y `node scripts/gates/build-board.mjs`.
+8. **Validate & board**: `openspec validate <id> --strict` and `node scripts/gates/build-board.mjs`.
 
-9. **Resumen final**: id, kind, capacidades, targets, zonas protegidas afectadas (si hay), decisiones abiertas (si hay), resultado esperado, alternativas consideradas (si hubo) y que queda `status: draft` esperando **aprobación humana** (al aprobar: `status: accepted` + `accepted_by` + `accepted_at`).
+9. **Final summary**: id, kind, capabilities, targets, protected zones affected (if any), open decisions (if any), expected outcome, alternatives considered (if any), and that it stays `status: draft` awaiting **human approval** (on approval: `status: accepted` + `accepted_by` + `accepted_at`).
 
-Reglas: un change por idea; nada de código acá; `[@test]` obligatorio si `kind: fix`; alternativas obligatorias cuando el pedido trae una decisión.
+Rules: one change per idea; no code here; `[@test]` mandatory for `kind: fix`/`refactor`; alternatives mandatory when the request carries a decision.

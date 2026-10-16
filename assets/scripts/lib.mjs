@@ -1,7 +1,7 @@
-// Spec Growth — utilidades compartidas por los gates (v0.6).
-// Sin dependencias externas. Parser YAML: subconjunto propio del sistema.
-// Política de case: TODAS las comparaciones de paths/globs son case-insensitive
-// (se normalizan a minúsculas); documentado en SKILL.md.
+// Spec Growth — shared utilities for the gates (v0.9).
+// No external dependencies. YAML parser: system's own subset.
+// Case policy: ALL path/glob comparisons are case-insensitive
+// (normalized to lowercase); documented in SKILL.md.
 import { readdirSync, readFileSync, writeFileSync, renameSync, unlinkSync, existsSync, statSync, lstatSync } from "node:fs";
 import { join, relative, normalize } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -9,13 +9,13 @@ import { execFileSync } from "node:child_process";
 export const clean = (s) => String(s).trim().replace(/^["']|["']$/g, "").trim();
 export const arr = (v) => (Array.isArray(v) ? v : v === undefined || v === null || v === "" ? [] : [v]);
 
-// Extensiones de código donde se buscan citas (@cita REQ-...) dentro de directorios.
+// Code extensions scanned for citations (@cita REQ-...) inside directories.
 export const CODE_EXTS = new Set([
   ".kt", ".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".cs", ".rs", ".go", ".dart",
   ".rb", ".php", ".swift", ".m", ".mm", ".c", ".h", ".cc", ".cpp", ".hpp", ".scala", ".sql",
 ]);
 
-// --- texto: siempre sin BOM (con cache de lectura por corrida) ---
+// --- text: always without BOM (with per-run read cache) ---
 const textCache = new Map();
 export function readText(file) {
   if (textCache.has(file)) return textCache.get(file);
@@ -32,9 +32,9 @@ const stripInlineComment = (s) => {
   return (i >= 0 ? t.slice(0, i) : t).trim();
 };
 
-// Parser del subconjunto. `errors` (opcional): array donde se registran
-// { line, text } de las líneas no interpretadas (y claves duplicadas).
-// Soporta bloques escalares (| y >): su contenido se captura en el valor.
+// Subset parser. `errors` (optional): array where unparsed lines
+// { line, text } get recorded (and duplicate keys).
+// Supports scalar blocks (| and >): their content is captured in the value.
 export function parseYaml(text, errors = null) {
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const out = {};
@@ -94,10 +94,10 @@ export function parseYaml(text, errors = null) {
         continue;
       }
       if (indent > 0) {
-        report(i, raw); // estructura anidada fuera de listas de objetos
+        report(i, raw); // nested structure outside object lists
         continue;
       }
-      if (Object.prototype.hasOwnProperty.call(out, key)) report(i, raw); // clave duplicada
+      if (Object.prototype.hasOwnProperty.call(out, key)) report(i, raw); // duplicate key
       if (/^[|>][-+]?\d*$/.test(valueRaw.trim())) {
         out[key] = "";
         currentKey = null;
@@ -149,7 +149,7 @@ function safeStat(p) {
 }
 
 const WALK_EXCLUDES = new Set(["node_modules", ".git", "dist", "build", "out", "target", ".gradle", ".idea", ".vscode", ".venv", "venv", "__pycache__", ".next", ".nuxt"]);
-const MD_EXCLUDES = new Set(["node_modules", ".git"]); // specs: no excluir build/target/out (carpetas legítimas bajo openspec/)
+const MD_EXCLUDES = new Set(["node_modules", ".git"]); // specs: do not exclude build/target/out (legit folders under openspec/)
 const WALK_MAX_DEPTH = 40;
 
 export function walkMd(dir, depth = 0) {
@@ -160,7 +160,7 @@ export function walkMd(dir, depth = 0) {
     const p = join(dir, name);
     let st;
     try {
-      st = lstatSync(p); // no sigue symlinks: evita ciclos
+      st = lstatSync(p); // does not follow symlinks: avoids cycles
     } catch {
       continue;
     }
@@ -171,8 +171,8 @@ export function walkMd(dir, depth = 0) {
   return out;
 }
 
-// Archivos de código (por extensión) dentro de un directorio, recursivo.
-// Mismas exclusiones y protecciones que walkMd.
+// Code files (by extension) inside a directory, recursive.
+// Same exclusions and protections as walkMd.
 export function walkFiles(dir, depth = 0) {
   if (!existsSync(dir) || depth > WALK_MAX_DEPTH) return [];
   const out = [];
@@ -241,7 +241,7 @@ export function listChanges(root, errors = null) {
     const st = safeStat(dir);
     if (!st || !st.isDirectory()) continue;
     if (!existsSync(join(dir, "proposal.md"))) {
-      if (errors) errors.push({ id: name, file: dir, line: 0, text: "carpeta de change sin proposal.md (¿add incompleto?)" });
+      if (errors) errors.push({ id: name, file: dir, line: 0, text: "change folder without proposal.md (incomplete add?)" });
       continue;
     }
     out.push(readChange(root, name, errors));
@@ -249,8 +249,8 @@ export function listChanges(root, errors = null) {
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// Devuelve { archived, digests, digestIds } — digestIds permite resolver deps
-// contra cambios ya compactados (líneas "- YYYY-MM-DD · <id> · <kind>").
+// Returns { archived, digests, digestIds } — digestIds resolves deps
+// against already-compacted changes (lines "- YYYY-MM-DD · <id> · <kind>").
 export function listArchive(root) {
   const archiveDir = join(root, "openspec", "changes", "archive");
   const archived = [];
@@ -298,7 +298,7 @@ export function listCapabilities(root) {
   return out;
 }
 
-// --- paths y globs (case-insensitive: todo se normaliza a minúsculas) ---
+// --- paths and globs (case-insensitive: everything normalized to lowercase) ---
 export const pathKey = (p) => String(p).replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "").toLowerCase();
 
 export function targetsOverlap(a, b) {
@@ -343,8 +343,8 @@ export function globToRegExp(glob) {
   return compiled;
 }
 
-// Matchea (case-insensitive) un path contra zonas; incluye el path como directorio
-// (path + "/") para que `**/auth/**` cubra el target directorio `src/auth`.
+// Matches (case-insensitive) a path against zones; includes the path as a directory
+// (path + "/") so `**/auth/**` covers the directory target `src/auth`.
 export function matchZones(relPath, zones) {
   const base = pathKey(relPath);
   const candidates = [base, base + "/"];
@@ -355,7 +355,7 @@ export function matchZones(relPath, zones) {
   return null;
 }
 
-// --- git (con caches por corrida) ---
+// --- git (with per-run caches) ---
 const gitTsCache = new Map();
 export function gitLastCommitTs(root, relPath) {
   const key = root + "::" + pathKey(relPath);
@@ -389,8 +389,8 @@ export function gitHead(root) {
   }
 }
 
-// true = ancestro de HEAD; false = no lo es (ref válida); null = no verificable
-// (git ausente, repo vacío, o ref inválida/ambigua). Rechaza refs que empiezan con "-".
+// true = ancestor of HEAD; false = not (valid ref); null = unverifiable
+// (git absent, empty repo, or invalid/ambiguous ref). Rejects refs starting with "-".
 export function gitIsAncestor(root, ref) {
   if (!ref || String(ref).startsWith("-")) return null;
   try {
@@ -417,8 +417,8 @@ export function listTrackedFiles(root) {
   return val;
 }
 
-// ¿El contenido actual de relDir está limpio en git? (vacío = sin cambios pendientes)
-// Devuelve true/false/null (sin git).
+// Is the current content of relDir clean in git? (empty = no pending changes)
+// Returns true/false/null (no git).
 export function gitDirIsClean(root, relDir) {
   try {
     const out = execFileSync("git", ["status", "--porcelain", "--", relDir], {
@@ -433,7 +433,7 @@ export function gitDirIsClean(root, relDir) {
   }
 }
 
-// Raíz del sistema: el ancestro más cercano con openspec/changes.
+// System root: nearest ancestor with openspec/changes.
 export function resolveRoot(start) {
   let d = normalize(start);
   for (let i = 0; i < 80; i++) {
@@ -445,7 +445,7 @@ export function resolveRoot(start) {
   return null;
 }
 
-// --- requisitos y citas ---
+// --- requirements and citations ---
 export function testRefsIn(file) {
   const refs = [];
   const text = readText(file);
@@ -471,7 +471,7 @@ export function citationsIn(text) {
   return ids;
 }
 
-// --- evidencia ---
+// --- evidence ---
 export function readEvidence(root) {
   const p = join(root, "openspec", "evidence.json");
   try {
@@ -481,9 +481,9 @@ export function readEvidence(root) {
   }
 }
 
-// Expande un target con wildcards contra archivos trackeados.
-// Sin wildcards: [pathKey(target)]. Con wildcards y sin git: null (desconocido).
-// Cap de 2000: expansiones gigantes degradan a null (los callers usan el literal).
+// Expands a wildcard target against tracked files.
+// No wildcards: [pathKey(target)]. With wildcards and no git: null (unknown).
+// Cap 2000: huge expansions degrade to null (callers use the literal).
 export function expandTarget(root, target, tracked) {
   const t = String(target);
   if (!/[*?]/.test(t)) return [pathKey(t)];
@@ -494,7 +494,7 @@ export function expandTarget(root, target, tracked) {
   return matches;
 }
 
-// Escritura atómica: tmp + rename con retry (Windows/AV) y cleanup.
+// Atomic write: tmp + rename with retry (Windows/AV) and cleanup.
 export function writeAtomic(file, content) {
   const tmp = `${file}.tmp-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
   writeFileSync(tmp, content);
@@ -507,23 +507,23 @@ export function writeAtomic(file, content) {
       lastErr = e;
       const until = Date.now() + 40 * (i + 1);
       while (Date.now() < until) {
-        /* backoff corto (contexto síncrono) */
+        /* short backoff (synchronous context) */
       }
     }
   }
   try {
-    writeFileSync(file, content); // fallback no-atómico (destino bloqueado)
+    writeFileSync(file, content); // non-atomic fallback (target locked)
     try {
       unlinkSync(tmp);
     } catch {
-      /* tmp huerfano tolerable */
+      /* orphan tmp is tolerable */
     }
-    console.error(`⚠ writeAtomic: rename falló (${lastErr ? lastErr.code : "?"}) — escritura directa en ${file}`);
+    console.error(`⚠ writeAtomic: rename failed (${lastErr ? lastErr.code : "?"}) — direct write to ${file}`);
   } catch (e2) {
     try {
       unlinkSync(tmp);
     } catch {
-      /* ignorar */
+      /* ignore */
     }
     throw e2;
   }

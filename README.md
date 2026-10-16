@@ -1,21 +1,26 @@
 # Spec Growth
 
-Sistema **spec-driven / spec-anchored** para [OpenCode](https://opencode.ai). Las specs son el **contrato vivo del presente**; los changes, el **futuro en trámite**; el BOARD, una **vista generada**.
+Spec-anchored change management for [OpenCode](https://opencode.ai), built on OpenSpec.
 
-> **La máquina detecta; el humano decide.** Nada se aprueba por silencio: toda aprobación queda registrada (`.openspec.yaml` + `DECISIONS.md`) y el gate la verifica.
+Specs are the living contract of the present. Changes are the future in flight. The BOARD is a generated view of both. The machine detects; the human decides.
 
-Es un retrofit serio sobre **OpenSpec** (`@fission-ai/openspec`) — sin forkear su filosofía, solo extendiéndola: metadata por change, evidencia verde real de tests, waivers con vencimiento, zonas protegidas con ADR cruzado, decisiones y conflictos ⚔ registrados, gates mecánicos en pre-commit/CI, tablero humano + índice de máquina.
+## How it works
 
-## Qué resuelve
+- Every behavior change goes through a change folder (`openspec/changes/<id>`) with metadata: `kind`, `targets`, `tests`, `deps`, `gitref`.
+- `verified` is earned, not declared: it requires a green `gate-check --run-tests` run, recorded as local evidence. (`--tests-command` runs in substituted mode and never produces green.)
+- Deviations are explicit: waivers (`requested` → `granted`, with owner and expiry), open decisions, and conflicts that contradict something already decided or written. All of them block closure until the human resolves them, and every resolution is recorded in `DECISIONS.md`.
+- Protected zones (auth, persistence, external APIs) require explicit human approval, cross-checked against the decision log.
+- A dependency-free Node gate (`gate-check.mjs`) runs on pre-commit, in CI, and before archiving. `BOARD.md` is generated and git-ignored; `openspec/board.json` is the machine index.
 
-- **Drift spec↔código**: `/spec-verify` hace gate mecánico + pase semántico adversarial (requisitos sin implementación, código sin spec, tests que prueban otra cosa).
-- **"¿De verdad está terminado?"**: `verified` no se declara — se gana con evidencia verde de tests (`gate-check --run-tests`).
-- **Desviaciones y decisiones**: waivers ⚠ (los pide cualquiera, los otorga el humano), decisiones abiertas ⏸ y conflictos que contradicen lo ya escrito ⚔ bloquean el cierre hasta resolución registrada por ADR.
-- **Zonas de riesgo**: `protected:` en config; tocarlas exige `human_approved` respaldado por una línea de ADR verificable.
-- **Bugs**: la skill `bug-finder` corre en **modo anclado** — audita contra las specs vivas y `DECISIONS.md`, y cada bug entra por `/spec-triage` con test de regresión.
-- **Refactors**: `kind: refactor` exige `[@test]` de regresión; el overlap entre changes secuenciado por `deps` se trata como orden planificado (warning, no error).
+## Requirements
 
-## Instalación (skill global de OpenCode)
+Node ≥ 20.19 · git · the OpenSpec CLI (`@fission-ai/openspec`) · OpenCode.
+
+The optional MCPs (`codebase-memory`, Structurizr) are added by the INIT only when missing.
+
+## Install
+
+Clone as a global OpenCode skill:
 
 ```bash
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git ~/.config/opencode/skills/spec-growth
@@ -27,33 +32,53 @@ Windows (PowerShell):
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.config\opencode\skills\spec-growth"
 ```
 
-Después, en cualquier repo git que quieras gestionar, pedile al agente: **"iniciá Spec Growth"**. El INIT verifica precondiciones, instala/verifica OpenSpec, agrega los MCPs que falten (codebase-memory, Structurizr), forkea el schema `spec-anchored`, aplica el scaffold (AGENTS.md, config, hook pre-commit, comandos) y regenera el BOARD.
+## Bootstrap a repository
 
-## Comandos
+In any git repository, ask the agent: **"Start Spec Growth"**. The INIT procedure (detailed in `SKILL.md`):
 
-| Comando | Rol |
+1. checks preconditions (git, Node, npm)
+2. installs or verifies the OpenSpec CLI and adds the missing MCPs
+3. forks the `spec-anchored` schema and applies the patch
+4. lays down the scaffold: `AGENTS.md`, `openspec/config.yaml`, `BOARD.md`, `DECISIONS.md`, the gate scripts and the pre-commit hook
+5. copies the seven commands into `.opencode/commands/`
+6. regenerates the BOARD
+
+## Commands
+
+| Command | Role |
 |---|---|
-| `/spec-add` | Crear un change (propuesta + delta spec + metadata). No escribe código |
-| `/spec-triage` | Bug/discrepancia → decide el lado (humano) → ADR + `fix` con regresión |
-| `/spec-apply` | Implementar UN change en su branch, con tests + gate y evidencia verde |
-| `/spec-verify` | Gate + auditoría semántica: hallazgos, waivers y decisiones propuestas |
-| `/spec-gate` | Medir y registrar (estático o `--run-tests`). No arregla nada |
-| `/spec-resolve` | Resolver 🔒 aprobaciones · ⏸ decisiones · ⚔ conflictos · ⚠ waivers |
-| `/diagram-sync` | Sincronizar el C4 (`ARCHITECTURE.dsl`) contra el código real |
+| `/spec-add` | Create a change: proposal, delta spec, metadata, technical alternatives. No code |
+| `/spec-triage` | Bug or discrepancy → decide the side (human) → ADR + `fix` change with a regression test |
+| `/spec-apply` | Implement one change on its branch: tests + gate with green evidence; asks for approval on protected zones |
+| `/spec-verify` | Gate + adversarial semantic pass over specs, code and tests, with persisted findings |
+| `/spec-gate` | Measure and record (static or `--run-tests`). Fixes nothing |
+| `/spec-resolve` | Resolve what awaits the human: approvals, decisions, conflicts, waivers |
+| `/diagram-sync` | Diff the C4 model (`ARCHITECTURE.dsl`) against code and IaC |
 
-## Estructura
+Works alongside the `bug-finder` skill in **anchored mode**: it audits against the living specs and `DECISIONS.md`, classifies findings (spec violation · spec silent · contradicts decision) and routes each one through `/spec-triage`.
+
+## Gate modes
+
+| Flag | Purpose |
+|---|---|
+| *(none)* | Static gate — the pre-commit mode (seconds) |
+| `--run-tests` | Run `test_command` and record green evidence — the CI/verification mode |
+| `--scope <id>` | Local focus: reds from other changes become warnings. Affects the report only, never the evidence |
+| `--pre-archive <id>` | Archive preconditions: verified · no blocking waivers, decisions or conflicts · merge verified against the current target state |
+| `--diff <base>` | Protected files touched without approval, against a git base — for CI |
+| `--tests-command "CMD"` | Substituted test mode: never produces green; forbidden in CI |
+
+`compact-archive.mjs --days=90 [--apply]` collapses old archived changes into per-year digests; it refuses to delete content that is dirty or uncommitted.
+
+## Repository layout
 
 ```
-SKILL.md            la spec canónica: glosario, INIT, operaciones, reglas, estado y límites
-assets/commands/    los 7 comandos que el INIT copia a .opencode/commands/
-assets/scripts/     gates: gate-check.mjs · build-board.mjs · compact-archive.mjs · lib.mjs
-assets/scaffold/    AGENTS.md · config.yaml · hook pre-commit · schema-patch · seeds
+SKILL.md            the canonical spec: glossary, INIT, operations, rules, status and limits
+assets/commands/    the seven commands copied into a repo by the INIT
+assets/scripts/     gate-check.mjs · build-board.mjs · compact-archive.mjs · lib.mjs
+assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch · seeds
 ```
 
-## Estado
+## Status
 
-**v0.9** — endurecido en 4 rondas de auditoría/ingeniería adversariales (v0.5→v0.9). El detalle honesto de lo implementado y los límites conocidos vive en `SKILL.md` → *"Estado de implementación"*. Límites destacados: la evidencia es local y sin firma (la barrera real es CI con `--run-tests`), y `--scope` solo afecta el reporte local, nunca la evidencia.
-
-## Requisitos
-
-Node ≥ 20.19 · git · OpenSpec CLI · OpenCode. Los MCPs (codebase-memory, Structurizr) son opcionales: el INIT los agrega solo si faltan.
+**v0.9.** Iterated through four rounds of adversarial audits and engineering review (v0.5 → v0.9). The current state of what is implemented, and its known limits, lives in `SKILL.md` → *Implementation status*. Notable limits: evidence is local and unsigned (the real barrier is CI running `--run-tests`); `--scope` affects the local report only; flag-based approvals rely on agent discipline plus the ADR cross-check.

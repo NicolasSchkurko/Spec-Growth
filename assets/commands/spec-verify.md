@@ -1,21 +1,21 @@
 ---
-description: Spec Growth — verificar (gate + auditoría semántica + hallazgos persistidos)
+description: Spec Growth — verify (gate + semantic audit + persisted findings)
 ---
 
-Estás operando **Spec Growth** (skill `spec-growth` para el detalle). Verificación solicitada: "$ARGUMENTS" (vacío = todos los changes activos).
+You are operating **Spec Growth** (load the `spec-growth` skill for details). Verification requested: "$ARGUMENTS" (empty = all active changes).
 
-1. **Gate mecánico**: `node scripts/gates/gate-check.mjs --run-tests` (registra evidencia verde; si no querés correr la suite en este momento, corré estático y aclaralo). Reportá errores y warnings textualmente.
-2. **Pase semántico** (advisory; sobre los changes activos y sus `targets`):
-   - Leé cada delta spec y el código de sus targets (usá el grafo de codebase-memory si está disponible).
-   - Buscá tres clases de drift: (a) requisitos sin implementación; (b) comportamiento implementado que ninguna spec describe; (c) tests que prueban algo distinto de lo declarado.
-   - Para cada hallazgo: **evidencia** (`archivo:línea` + requisito), severidad y propuesta de acción.
-3. **Nunca edites specs ni código en este pase.** Los hallazgos se convierten en:
-   - **Waiver `requested`** (con razón) si el código se desvía de una regla de forma consciente → `.openspec.yaml`, espera tu decisión.
-   - **Decision request** si la brecha pide una decisión que excede la autoridad del agente.
-   - **Conflicto ⚔** (`conflicts`) si el código o la spec contradicen un ADR/requisito previo y hay que aprobar la reversión.
-   - **`/spec-triage`** si es una discrepancia que necesita decidir el lado (código vs spec).
-   - **Citas**: reportá requisitos sin `@cita` (si el proyecto usa IDs) y proponé agregarlas donde falte en código nuevo. Las citas rotas las detecta el gate.
-4. **Persistencia**: si hubo hallazgos, escribí `openspec/changes/<id>/findings.md` con un `- [ ] <hallazgo> — <evidencia>` por cada uno (y `- [x]` para los resueltos). El gate advierte si un change `applying`/`verified` tiene hallazgos abiertos. Si no hubo hallazgos, no crees el archivo.
-5. Regenerá el tablero (`node scripts/gates/build-board.mjs`) y entregá el informe: gate + hallazgos + propuestas (waivers/decisiones/triage) + próximos pasos.
+1. **Mechanical gate**: `node scripts/gates/gate-check.mjs --run-tests` (records green evidence; if you do not want to run the suite right now, run static and say so). Report errors and warnings verbatim.
+2. **Semantic pass** (advisory; over active changes and their `targets`):
+   - Read each delta spec and the code of its targets (use the codebase-memory graph if available).
+   - Look for three classes of drift: (a) requirements without an implementation; (b) implemented behavior no spec describes; (c) tests that prove something other than what is declared.
+   - For each finding: **evidence** (`file:line` + requirement), severity, and proposed action.
+3. **Never edit specs or code in this pass.** Findings become:
+   - a **`requested` waiver** (with a reason) if the code consciously deviates from a rule → `.openspec.yaml`, awaiting your decision;
+   - a **decision request** if the gap needs a decision beyond the agent's authority;
+   - a **⚔ conflict** (`conflicts`) if the code or the spec contradicts a previous ADR/requirement and the reversal must be approved;
+   - **`/spec-triage`** if it is a discrepancy that needs the side decided (code vs spec);
+   - **Citations**: report requirements without `@cita` (if the project uses IDs) and propose adding them where missing in new code. Broken citations are detected by the gate.
+4. **Persistence**: if there were findings, write `openspec/changes/<id>/findings.md` with one `- [ ] <finding> — <evidence>` per item (and `- [x]` for resolved ones). The gate warns if an `applying`/`verified` change has open findings. If there were no findings, do not create the file.
+5. Regenerate the board (`node scripts/gates/build-board.mjs`) and deliver the report: gate + findings + proposals (waivers/decisions/triage) + next steps.
 
-Nota: lo bloqueante es el gate mecánico (hook/CI); este pase es la red de seguridad para lo que los tests no cubren.
+Note: the blocking part is the mechanical gate (hook/CI); this pass is the safety net for what tests do not cover.

@@ -1,16 +1,16 @@
 ---
-description: Spec Growth — triage de un bug/discrepancia (decide el lado y registra)
+description: Spec Growth — triage a bug/discrepancy (decide the side and record it)
 ---
 
-Estás operando el sistema **Spec Growth** (skill `spec-growth` para el detalle). Entrada a triage: "$ARGUMENTS" (bug, discrepancia, hallazgo del pase semántico o incidente).
+You are operating **Spec Growth** (load the `spec-growth` skill for details). Triage input: "$ARGUMENTS" (a bug, discrepancy, semantic-pass finding, or incident).
 
-1. **Evidencia primero**: reproducí o localizá el comportamiento en el código (archivo:línea) y el requisito en la spec que lo cubre (si existe). Citá ambos con precisión.
-2. **Definí la discrepancia en una frase**: "el código hace X; la spec dice Y".
-3. **PREGUNTÁ AL USUARIO** — la decisión es humana, no tuya: *¿quién tiene razón, el código o la spec?* No continúes sin respuesta.
-4. **Registrá la decisión** en `DECISIONS.md` (append): fecha · título · contexto · decisión · consecuencias · refs (archivo:línea + spec).
-5. **Actuá según la decisión**:
-   - **Código mal** → creá un change `kind: fix` con el requisito correcto y su `[@test]` de regresión (flujo de `/spec-add`).
-   - **Spec mal** → creá un change que MODIFIQUE la spec al comportamiento correcto: usá `kind: fix` incluyendo un `[@test]` que apunte al test existente que cubre ese comportamiento; si no existe ninguno, pedí un waiver `deferred-test` (el gate exige regresión en `fix`). Si además hay que ajustar el código, incluir ambas partes.
-6. `node scripts/gates/build-board.mjs` y resumen final: decisión tomada + id del change creado. Si la decisión **contradice un ADR previo o un requisito vivo**, el change nuevo lleva un **conflicto ⚔** (`conflicts`) y tu aprobación explícita de la reversión antes de `verified`.
+1. **Evidence first**: reproduce or locate the behavior in code (file:line) and the requirement in the spec that covers it (if any). Cite both precisely.
+2. **State the discrepancy in one sentence**: "the code does X; the spec says Y".
+3. **ASK THE USER** — the decision is human, not yours: *who is right, the code or the spec?* Do not continue without an answer.
+4. **Record the decision** in `DECISIONS.md` (append): date · title · context · decision · consequences · refs (file:line + spec).
+5. **Act on the decision**:
+   - **Code is wrong** → create a `kind: fix` change with the correct requirement and its regression `[@test]` (the `/spec-add` flow).
+   - **Spec is wrong** → create a change that MODIFIES the spec to the correct behavior: use `kind: fix` including a `[@test]` pointing at the existing test covering that behavior; if none exists, request a `deferred-test` waiver (the gate requires a regression on `fix`). If the code also needs adjusting, include both parts.
+6. `node scripts/gates/build-board.mjs` and a final summary: the decision taken + the id of the created change. If the decision **contradicts a previous ADR or a living requirement**, the new change carries a **⚔ conflict** (`conflicts`) and awaits your explicit approval of the reversal before `verified`.
 
-Regla de oro: el triage **nunca** auto-agrega "el bug" como spec. Se especifica el **contrato** resultante, con su test.
+Golden rule: triage **never** auto-adds "the bug" to the spec. It specifies the **resulting contract**, with its test.

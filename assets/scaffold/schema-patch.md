@@ -1,11 +1,11 @@
-# Parche al schema `spec-anchored` (después de `openspec schema fork spec-driven spec-anchored`)
+# Patch for the `spec-anchored` schema (after `openspec schema fork spec-driven spec-anchored`)
 
-Objetivo: que el workflow exija nuestra metadata (`kind`, `targets`, `tests`; `waivers`/`open_decisions`/`conflicts` opcionales) y el `[@test]`.
+Goal: make the workflow require our metadata (`kind`, `targets`, `tests`; `waivers`/`open_decisions`/`conflicts` optional) and `[@test]`.
 
-1. Abrí `openspec/schemas/spec-anchored/schema.yaml` y localizá las instrucciones de cada artifact.
-2. Artifact **specs** (delta): en las instrucciones, agregar: *"Cada requirement incluye escenarios WHEN/THEN y una línea `[@test] <ruta del test>` que lo verifica"*.
-3. Artifact **proposal**: agregar: *"Completar `.openspec.yaml` con kind (fix|feature|architecture|refactor), targets, tests, deps, gitref; `conflicts` solo si el cambio contradice algo ya decidido/escrito"*.
-4. Artifact **design**: aclarar *"obligatorio si kind=architecture; opcional en el resto"*.
-5. Guardar y validar: `openspec schema validate spec-anchored`.
+1. Open `openspec/schemas/spec-anchored/schema.yaml` and find the instructions of each artifact.
+2. **specs** artifact (delta): in the instructions add: *"Every requirement includes WHEN/THEN scenarios and a `[@test] <test path>` line verifying it"*.
+3. **proposal** artifact: add: *"Fill `.openspec.yaml` with kind (fix|feature|architecture|refactor), targets, tests, deps, gitref; `conflicts` only if the change contradicts something already decided/written"*.
+4. **design** artifact: clarify *"mandatory if kind=architecture; optional otherwise"*.
+5. Save and validate: `openspec schema validate spec-anchored`.
 
-**Nota (spike):** si el formato interno del schema difiere de lo esperado, aplicar estas ediciones con el mismo espíritu (obligar metadata + `[@test]` + design condicional) donde corresponda, y anotar la diferencia en `DECISIONS.md`. Si `openspec schema fork` no existe en la versión instalada, crear la carpeta `openspec/schemas/spec-anchored/` copiando el schema `spec-driven` del paquete y aplicar lo mismo.
+**Spike note:** if the schema's internal format differs from what is expected, apply these edits in the same spirit (require metadata + `[@test]` + conditional design) where appropriate, and note the difference in `DECISIONS.md`. If `openspec schema fork` does not exist in the installed version, create `openspec/schemas/spec-anchored/` by copying the `spec-driven` schema from the package and apply the same.

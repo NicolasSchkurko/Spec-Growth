@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Spec Growth — compacta openspec/changes/archive/ (v0.8).
-// Las carpetas YYYY-MM-DD-* más viejas que N días pasan a una línea por cambio
-// en archive/YYYY.md (digest, con dedupe). Con --apply, las carpetas se eliminan
-// SOLO si están limpias (sin cambios pendientes) y commiteadas en git.
-// --force saltea "nunca commiteada"/"sin git", pero NUNCA borra contenido sucio.
-// Uso: node scripts/gates/compact-archive.mjs [--root DIR] [--days=90] [--apply] [--force]
+// Spec Growth — compacts openspec/changes/archive/ (v0.9).
+// YYYY-MM-DD-* folders older than N days collapse into one line per change
+// in archive/YYYY.md (digest, with dedupe). With --apply, folders are deleted
+// ONLY if they are clean (no pending changes) and committed in git.
+// --force skips "never committed"/"no git", but NEVER deletes dirty content.
+// Usage: node scripts/gates/compact-archive.mjs [--root DIR] [--days=90] [--apply] [--force]
 // Default: dry-run.
 import { readdirSync, readFileSync, existsSync, statSync, rmSync } from "node:fs";
 import { join, normalize, relative } from "node:path";
@@ -24,7 +24,7 @@ let days = 90;
 if (daysProvided !== undefined) {
   const n = Number(daysProvided);
   if (!Number.isFinite(n) || n <= 0) {
-    console.error(`--days inválido: '${daysProvided}' (se espera un número > 0)`);
+    console.error(`--days invalid: '${daysProvided}' (expected a number > 0)`);
     process.exit(1);
   }
   days = n;
@@ -35,7 +35,7 @@ const root = normalize(getVal("--root") || lib.resolveRoot(process.cwd()) || pro
 const archiveDir = join(root, "openspec", "changes", "archive");
 
 if (!existsSync(archiveDir)) {
-  console.error(`No existe openspec/changes/archive/ bajo: ${root}`);
+  console.error(`openspec/changes/archive/ not found under: ${root}`);
   process.exit(1);
 }
 
@@ -57,7 +57,7 @@ for (const name of readdirSync(archiveDir)) {
 }
 
 if (!candidates.length) {
-  console.log(`Nada que compactar (corte: ${days} días).`);
+  console.log(`Nothing to compact (cutoff: ${days} days).`);
   process.exit(0);
 }
 
@@ -76,9 +76,9 @@ function committedCheck(relDir) {
     })
       .toString()
       .trim();
-    return out ? { ok: true } : { ok: false, reason: "nunca commiteada" };
+    return out ? { ok: true } : { ok: false, reason: "never committed" };
   } catch {
-    return { ok: false, reason: "sin git / no verificable" };
+    return { ok: false, reason: "no git / not verifiable" };
   }
 }
 
@@ -88,19 +88,19 @@ for (const c of candidates) {
   const rel = relative(root, c.dir).replace(/\\/g, "/");
   const clean = lib.gitDirIsClean(root, rel);
   if (clean === false) {
-    skipped.push({ name: c.name, reason: "hay cambios sin commitear — NO se borra (ni con --force)" });
+    skipped.push({ name: c.name, reason: "uncommitted changes — NOT deleted (not even with --force)" });
     continue;
   }
   const safety = committedCheck(rel);
   if (!force && !(clean === true && safety.ok)) {
     skipped.push({
       name: c.name,
-      reason: clean === null ? "sin git / no verificable" : safety.ok ? "no verificable" : safety.reason,
+      reason: clean === null ? "no git / not verifiable" : safety.ok ? "not verifiable" : safety.reason,
     });
     continue;
   }
   if (!(clean === true && safety.ok)) {
-    console.log(`  ⚠ --force: ${c.name} — borrado sin verificación de git (irreversible)`);
+    console.log(`  ⚠ --force: ${c.name} — deletion without git verification (irreversible)`);
   }
   const id = c.name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
   const line = `- ${c.name.slice(0, 10)} · ${id} · ${kindOf(c.dir)}`;
@@ -108,8 +108,8 @@ for (const c of candidates) {
   plan.get(c.year).push(line);
 }
 
-console.log(`${apply ? "APPLY" : "DRY-RUN"} — ${candidates.length} candidato(s), ${skipped.length} salteado(s) (corte: ${days} días)`);
-for (const s of skipped) console.log(`  ⊘ ${s.name} — ${s.reason} (usá --force para forzar)`);
+console.log(`${apply ? "APPLY" : "DRY-RUN"} — ${candidates.length} candidate(s), ${skipped.length} skipped (cutoff: ${days} days)`);
+for (const s of skipped) console.log(`  ⊘ ${s.name} — ${s.reason} (use --force to force)`);
 
 let deleted = 0;
 let appended = 0;
@@ -117,9 +117,9 @@ for (const [year, lines] of plan) {
   const digest = join(archiveDir, `${year}.md`);
   const existing = existsSync(digest) ? readFileSync(digest, "utf8") : "";
   const fresh = lines.filter((l) => !existing.includes(l));
-  console.log(`→ archive/${year}.md (+${fresh.length} nuevas, ${lines.length - fresh.length} ya presentes)`);
+  console.log(`→ archive/${year}.md (+${fresh.length} new, ${lines.length - fresh.length} already present)`);
   if (!apply) continue;
-  const header = `# Archive ${year}\n\nCambios compactados — texto completo en git history.\n\n`;
+  const header = `# Archive ${year}\n\nCompacted changes — full text in git history.\n\n`;
   const base = existsSync(digest) ? readFileSync(digest, "utf8") : header;
   if (fresh.length) lib.writeAtomic(digest, base + fresh.join("\n") + "\n");
   else if (!existsSync(digest)) lib.writeAtomic(digest, header);
@@ -131,8 +131,8 @@ for (const [year, lines] of plan) {
 }
 
 if (apply) {
-  console.log(`\nListo: ${deleted} carpeta(s) eliminadas, ${appended} línea(s) nuevas en digests.`);
-  console.log("Hacé commit (los originales quedan en git history).");
+  console.log(`\nDone: ${deleted} folder(s) deleted, ${appended} new line(s) in digests.`);
+  console.log("Commit (the originals remain in git history).");
 } else {
-  console.log("\nDry-run: para aplicar, agregá --apply");
+  console.log("\nDry-run: to apply, add --apply");
 }

@@ -1,13 +1,13 @@
 ---
-description: Spec Growth — gate mecánico (estático por defecto; --run-tests para evidencia verde)
+description: Spec Growth — mechanical gate (static by default; --run-tests for green evidence)
 ---
 
-Estás operando **Spec Growth** (skill `spec-growth`). Objetivo: **medir, no arreglar**.
+You are operating **Spec Growth** (load the `spec-growth` skill for details). Goal: **measure, do not fix**.
 
-1. Default (rápido, el de pre-commit): `node scripts/gates/gate-check.mjs`.
-2. Verificación completa (CI / antes de pasar a `verified`): `node scripts/gates/gate-check.mjs --run-tests` — corre `test_command` y registra **evidencia verde de tests**.
-3. Modos útiles: `--scope <id>` (enfoque local: los rojos de **otros** changes pasan a warnings — ideal para tu commit) · `--pre-archive <id>` (precondiciones de archivado: verified · sin waivers que bloqueen · sin decisiones · merge verificado por `gitref`/`merged_as`) · `--diff <base>` (archivos protegidos tocados sin aprobación — para CI) · `--json` · `--root DIR`.
-4. Reportá el resultado textual (errores y warnings, tal cual salen) y regenerá el tablero: `node scripts/gates/build-board.mjs`.
-5. Cierre: GATE VERDE/ROJO + qué espera al humano (🔒 aprobaciones · ⏸ decisiones · ⚔ conflictos · ⚠ waivers).
+1. Default (fast, the pre-commit one): `node scripts/gates/gate-check.mjs`.
+2. Full verification (CI / before moving to `verified`): `node scripts/gates/gate-check.mjs --run-tests` — runs `test_command` and records **green test evidence**.
+3. Useful modes: `--scope <id>` (local focus: reds **from other** changes become warnings — ideal for your commit) · `--pre-archive <id>` (archive preconditions: verified · no blocking waivers · no decisions · no conflicts · merge verified by `gitref`/`merged_as`) · `--diff <base>` (protected files touched without approval — for CI) · `--json` · `--root DIR`.
+4. Report the result verbatim (errors and warnings as they come out) and regenerate the board: `node scripts/gates/build-board.mjs`.
+5. Closing: GATE GREEN/RED + what awaits the human (🔒 approvals · ⏸ decisions · ⚔ conflicts · ⚠ waivers).
 
-Reglas: acá no se corrige nada (implementar → `/spec-apply`; discrepancias → `/spec-triage`). `--tests-command "CMD"` corre en modo **tests-substituted** y NO produce evidencia verde; en CI está prohibido.
+Rules: nothing is fixed here (implement → `/spec-apply`; discrepancies → `/spec-triage`). `--tests-command "CMD"` runs in **tests-substituted** mode and produces NO green evidence; it is forbidden in CI.
