@@ -92,8 +92,3 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 | The pre-commit hook is machine-local (`.git/hooks/`), not versioned | Reinstall it per clone; the scaffold ships the current version |
 | **Nothing measures outcome** — the system verifies that what was specified got built, not that it was worth building | Open gap (see Output vs outcome above); human acceptance is the only gate |
 | Not implemented (deliberate): evidence signing, orphan-code/undeclared-dependency detection, consumer migration on breaking changes, auto-archive, a generated CI workflow asset | See `SKILL.md` → *Implementation status* |
-
-## Candidates under evaluation
-
-1. **Requirement IDs + optional citations, first-class** — the gate already understands `[REQ-…]` and `@cita` when a repo opts in; per the 2026 citation study this is the cheapest automated hallucination tripwire available (TDR 86–88%, 0% FPR).
-2. _(list open — to be continued)_
