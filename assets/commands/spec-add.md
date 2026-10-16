@@ -20,7 +20,7 @@ You are operating the **Spec Growth** system in this repository (load the `spec-
 
 5. **Create the change**: `openspec new change <kebab-id>` (schema `spec-anchored`). Write:
    - `proposal.md`: why + what (short) + "Expected outcome" (if applicable) + "Alternatives considered" (if applicable).
-   - `specs/<capability>/spec.md`: delta with Requirements (SHALL) and concrete WHEN/THEN scenarios. **Every requirement carries a `[@test] <path>` line.** If the project uses **requirement IDs** (check living specs), assign `[REQ-<capability>-<n>]` to new ones and preserve existing IDs. Tests/code may cite them with `@cita REQ-…` (optional; enables the broken-citation/hallucination detector).
+   - `specs/<capability>/spec.md`: delta with Requirements (SHALL) and concrete WHEN/THEN scenarios. **Every requirement carries a `[@test] <path>` line.** If the project uses **requirement IDs** (check living specs), assign `[REQ-<capability>-<n>]` to new ones and preserve existing IDs. Tests/code may cite them with `@cita REQ-…` (optional; enables the broken-citation/hallucination detector). If this change **creates a new capability** (no `openspec/specs/<capability>/` exists yet), the folder name IS the capability id (`cap:<capability>`) — choose it deliberately; two active changes cannot create the same one.
    - `tasks.md`: verifiable checklist. If large, propose the **riskiest first vertical slice** (hardest-first).
    - `design.md`: ONLY if `kind: architecture`.
 

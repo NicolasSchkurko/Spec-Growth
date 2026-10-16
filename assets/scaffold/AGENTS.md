@@ -9,7 +9,7 @@ This repo uses **Spec Growth**: living specs as the contract, changes in flight,
 - `DECISIONS.md` — the why (append-only): decisions, granted/rejected waivers, approvals.
 - `openspec/changes/<id>/walkthrough.md` — tech brief: the mechanism of a flagged change; the human signs it off (answers + `understood_by`/`understood_at`) in `/spec-verify`.
 - `BOARD.md` — **GENERATED** state; do not edit by hand (`node scripts/gates/build-board.mjs`).
-- `ARCHITECTURE.dsl` — C4 model; owns the structural facts.
+- `ARCHITECTURE.dsl` — C4 model; owns the structural facts; components carry `cap:<capability>` tags.
 
 ## Rules
 
@@ -19,7 +19,7 @@ This repo uses **Spec Growth**: living specs as the contract, changes in flight,
 4. **Waivers**: anyone *requests* (`state: requested` + reason); only the human *grants* (`granted` + `owner` + `expires`). A **requested or expired** waiver blocks `verified`; a **valid granted** one enables (its expiry is its closure).
 5. **Decisions and conflicts**: anything beyond the agent's authority goes to `open_decisions` (question/target/proposal); pending = no `verified`; the resolution goes to `DECISIONS.md`. If a change **contradicts something already decided/written**, it is declared in `conflicts` (`with`/`what`): pending = no `verified` or `--pre-archive`; approved explicitly (reversal + ADR).
 6. **Protected zones** (`openspec/config.yaml` → `protected:`): touching one requires `human_approved: true`, indicated by the human. The agent never sets it alone.
-7. **Capabilities**: the owning spec declares `provides: [cap:x]`; duplicates are a gate error. Before building something new, reuse (existing `cap:` or repo component).
+7. **Capabilities**: a capability is the `openspec/specs/<capability>/` folder (`cap:<capability>`; optional `provides:` frontmatter to alias). Duplicates are a gate error; two changes creating the same new capability collide. Components in `ARCHITECTURE.dsl` carry a `cap:<capability>` tag (checked by the gate). Before building something new, reuse (existing `cap:` or repo component).
 8. **Evidence**: `verified` is earned with a green `gate-check --run-tests`; without fresh evidence the BOARD marks it ⚠. `evidence.json` is local (git-ignored), never edited.
 9. Gates: pre-commit → `node scripts/gates/gate-check.mjs`; CI → `--run-tests` + `openspec validate --all --strict`.
 10. The agent proposes and executes; **the human decides** (triage, approvals, decisions, waiver grants, apply reviews).

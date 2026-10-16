@@ -34,7 +34,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ap
    - Gate result + recorded evidence (`evidence.json`)
    - Open questions / decisions taken during implementation
 7. **`verified` only if**: green gate **with test evidence** + no blocking waivers (requested/expired) + no pending decisions + no unapproved conflicts + (protected zone → approved **with its id in `DECISIONS.md`**). Otherwise it stays `applying` with the list of blockers. (A pending tech brief or comprehension sign-off is a warning only — it blocks `--pre-archive`, not `verified`.)
-8. If the change is `kind: architecture`: suggest `/diagram-sync` before archiving.
+8. If the change is `kind: architecture` **or creates a new capability**: suggest `/diagram-sync` before archiving (capability tags live in `ARCHITECTURE.dsl`).
 9. **Pre-archive** (after merge, before archiving): `node scripts/gates/gate-check.mjs --pre-archive <id>` must be **OK** (verified · no waivers · no decisions · no conflicts · tech brief complete + comprehension sign-off · `gitref` merged). Only then: `openspec archive <id>`.
 
 **At the end, state**: review the diff, merge, and only then archive with the preconditions OK.

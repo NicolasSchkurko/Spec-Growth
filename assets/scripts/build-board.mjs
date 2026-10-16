@@ -246,6 +246,12 @@ if (invalid.length) {
 }
 md += `\n\n## Blocked / rejected\n\n`;
 md += blocked.length ? blocked.map((c) => line(c)).join("\n") : "_(empty)_";
+md += `\n\n## Capabilities (living specs)\n\n`;
+md += caps.size
+  ? [...caps.entries()]
+      .map(([id, ps]) => `- **${id}** — ${ps.map((p) => (p.source === "living" ? `owner: ${p.path}` : `draft in ${p.source}`)).join(" · ")}`)
+      .join("\n")
+  : "_(none registered)_";
 md += `\n\n## Dependency graph (declared deps)\n\n`;
 if (depNodes.size) {
   const slug = (s) => String(s).replace(/[^A-Za-z0-9_]/g, "_");

@@ -511,6 +511,60 @@ if (diffBase) {
   }
 }
 
+// 11b) two active changes creating the same NEW capability (folder collision)
+{
+  const livingCapPaths = new Set();
+  for (const cap of lib.listCapabilities(root)) {
+    const m = String(cap.path).replace(/\\/g, "/").match(/^openspec\/specs\/(.+)\/spec\.md$/i);
+    if (m) livingCapPaths.add(m[1].toLowerCase());
+  }
+  const creators = new Map();
+  for (const c of changes) {
+    if (TERMINAL.includes(c.status)) continue;
+    for (const f of lib.walkMd(join(c.dir, "specs"))) {
+      const rel = relative(root, f).replace(/\\/g, "/");
+      const m = rel.match(/changes\/[^/]+\/specs\/(.+)\/spec\.md$/i);
+      if (!m) continue;
+      const key = m[1].toLowerCase();
+      if (livingCapPaths.has(key)) continue; // modification of an existing capability
+      if (!creators.has(key)) creators.set(key, []);
+      creators.get(key).push(c);
+    }
+  }
+  for (const [key, cs] of creators) {
+    const uniq = [...new Map(cs.map((c) => [c.id, c])).values()];
+    if (uniq.length < 2) continue;
+    const ids = uniq.map((c) => c.id);
+    const both = uniq.filter((c) => ADVANCED.includes(c.status)).length >= 2;
+    const msg = `new capability '${key}' created by ${ids.join(" and ")} (pick one owner)`;
+    if (both) err(msg, ids);
+    else warn(msg, ids);
+  }
+}
+
+// 11c) structural mapping: capabilities vs ARCHITECTURE.dsl tags (only when the file exists)
+{
+  const dslPath = join(root, "ARCHITECTURE.dsl");
+  if (existsSync(dslPath)) {
+    const dsl = lib.readText(dslPath).toLowerCase();
+    const living = [];
+    for (const cap of lib.listCapabilities(root)) {
+      const m = String(cap.path).replace(/\\/g, "/").match(/^openspec\/specs\/(.+)\/spec\.md$/i);
+      if (m) living.push(m[1]);
+    }
+    for (const capPath of living) {
+      if (!dsl.includes("cap:" + capPath.toLowerCase())) {
+        warn(`capability '${capPath}' is not tagged in ARCHITECTURE.dsl (cap:${capPath}) — run /diagram-sync`);
+      }
+    }
+    const known = new Set(living.map((x) => x.toLowerCase()));
+    const tags = [...new Set([...dsl.matchAll(/cap:[a-z0-9._-]+/g)].map((x) => x[0]))];
+    for (const tag of tags) {
+      if (!known.has(tag.slice(4))) warn(`ARCHITECTURE.dsl: tag '${tag}' references no living capability (stale?)`);
+    }
+  }
+}
+
 // 12) requirements and citations (optional: activates when the repo uses [REQ-...] IDs)
 const rel = (f) => relative(root, f);
 const livingIds = new Map();

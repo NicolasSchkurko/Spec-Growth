@@ -303,13 +303,17 @@ export function readConfig(root, errors = null) {
   return { protectedZones, testCommand: cfg.test_command || null };
 }
 
+// A capability is the owning spec folder (`openspec/specs/<capability>/spec.md`)
+// → id `cap:<capability>`; an explicit `provides:` frontmatter may alias it.
 export function listCapabilities(root) {
   const specsDir = join(root, "openspec", "specs");
   const out = [];
   for (const file of walkMd(specsDir)) {
     const fm = readFrontmatter(file);
     const rel = relative(root, file).replace(/\\/g, "/");
-    const prov = arr(fm.provides);
+    let prov = arr(fm.provides);
+    const m = rel.match(/^openspec\/specs\/(.+)\/spec\.md$/i);
+    if (!prov.length && m) prov = ["cap:" + m[1]];
     if (!prov.length && !fm.name) continue;
     out.push({ path: rel, name: fm.name || rel.split("/").slice(-2, -1)[0] || rel, provides: prov });
   }
