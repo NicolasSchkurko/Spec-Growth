@@ -49,7 +49,7 @@ const ADVANCED = ["accepted", "applying", "verified"];
 const TERMINAL = ["rejected", "superseded"];
 const restId = (name) => name.replace(/^\d{4}-\d{2}-\d{2}-/, "");
 const archiveResolves = (id) =>
-  archived.some((a) => restId(a) === id || restId(a).endsWith("-" + id)) || digestIds.includes(id);
+  archived.some((a) => restId(a) === id) || digestIds.includes(id);
 
 const errors = [];
 const warnings = [];
@@ -896,7 +896,8 @@ if (preArchiveId) {
         else warn(`pre-archive ${c.id}: could not verify the merge (git?)`, [c.id]);
       }
     }
-    preArchiveResult = { id: c.id, ok: !errors.some((e) => e.ids.includes(c.id)) };
+    // Global errors (red suite, committed evidence) block too: never report OK on a red run.
+    preArchiveResult = { id: c.id, ok: !errors.some((e) => e.ids.length === 0 || e.ids.includes(c.id)) };
   }
 }
 

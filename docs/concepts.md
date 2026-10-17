@@ -50,7 +50,7 @@ conflicts: []                  # see Conflicts
 `verified` is not a claim; it is a record. `gate-check --run-tests` executes the project's `test_command` and stores a `green_tests` entry per change in `openspec/evidence.json` — local, git-ignored, **never committed**. Green is recorded only for changes with no gate errors.
 
 - Green only comes from a real run. `--tests-command` runs in **substituted** mode and never produces green.
-- Evidence goes **stale** when the content of the change's `targets` or `tests` changes after the recorded run — even an uncommitted edit. Committing right after a green run does **not** stale it: freshness is a **content fingerprint** (timestamps are only the fallback). Stale green is a warning in static mode and an error before archiving.
+- Evidence goes **stale** when the content of the change's `targets` or `tests` changes after the recorded run — even an uncommitted edit. Committing right after a green run does **not** stale it: freshness is a **content fingerprint** (timestamps are only the fallback) and line endings are normalized (CRLF/LF). Stale green is a warning in static mode and an error before archiving.
 - Evidence is per-clone: it is a local signal; the barrier that counts is CI running `--run-tests`.
 
 ## Tech brief (comprehension)

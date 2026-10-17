@@ -4,6 +4,8 @@
 **Model under test:** `opencode-go/deepseek-v4.1-flash` (the owner's daily driver) · **Judge:** `opencode-go/gpt-6-luna` (cross-family, 13 calls)
 **Protocol:** 21 headless runs (t1×5, t2×5, t3×3, t4×5, t5×3), concurrency 3, fresh fixture repo per run, mechanical checkers + LLM judge for the semantic rules.
 
+> **Note (2026-10-16):** four mechanical rules changed semantics in the checker fixes of this date: `t1.no-code`/`t5.no-code-edits` now measure against the base commit (committed edits included), `t3.evidence` requires a real green run, `t3.gitref-updated` accepts full 40-hex SHAs, and `t4.todo-intact` is scoped to the sign-off section. This baseline was recorded under the old semantics: **re-record it with the current checkers before comparing** post-change numbers.
+
 ## Behavior — per-rule pass rates and pass^k
 
 | Task | pass^k | Result |

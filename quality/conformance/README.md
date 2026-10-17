@@ -14,7 +14,7 @@ For each anchor task it:
 4. Optionally runs a cross-family LLM judge (`opencode-go/gpt-6-luna`) for the semantic rules.
 5. Writes `result.json` per run.
 
-`aggregate.mjs` then reports: per-rule pass rate per task, per-run all-pass, and pass^k (all k runs passed).
+`aggregate.mjs` then reports per-rule pass rate, per-run all-pass, and pass^k (all k runs passed). It reads the per-task `batch.json` marker written by the runner: runs from earlier batches are excluded, missing or extra runs are flagged, and pass^k is only declared when the batch is complete. Judged tasks (t1/t4/t5) additionally require their judge rules to be present in every run.
 
 ## Tasks (frozen v1)
 
@@ -32,7 +32,7 @@ For each anchor task it:
 $cli = "C:\Users\Luzbelito-WrkLp\AppData\Local\Programs\@opencodedesktop\resources\opencode-cli.exe"
 $env:OPENCODE_BIN = $cli          # optional; defaults to this path
 
-node run.mjs                      # full suite (21 runs)
+node run.mjs                      # all tasks, mechanical rules only (21 runs)
 node run.mjs t1-add --runs 1      # smoke / single task
 node run.mjs --judge              # include LLM judges (t1, t4, t5)
 node aggregate.mjs                # summary table + summary.md
@@ -42,7 +42,7 @@ Env overrides: `CONF_MODEL` (agent under test), `CONF_JUDGE` (judge model), `OPE
 
 ## Cost & time
 
-21 agent runs + 13 judge calls. On `deepseek-v4.1-flash` (~2-4 min per run, concurrency 3): roughly 20-40 min wall clock and single-digit dollars. Start with `t1-add --runs 1` to validate the harness.
+Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` without `--judge`): 21 agent runs. On `deepseek-v4.1-flash` (~2-4 min per run, concurrency 3): roughly 20-40 min wall clock and single-digit dollars. Start with `t1-add --runs 1` to validate the harness.
 
 ## Baseline protocol
 

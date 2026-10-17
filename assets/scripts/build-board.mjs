@@ -36,7 +36,7 @@ const evidence = lib.readEvidence(root);
 const byIdAll = new Map(changes.map((c) => [c.id, c]));
 const restIdOf = (name) => String(name).replace(/^\d{4}-\d{2}-\d{2}-/, "");
 const depResolves = (dep) =>
-  archived.some((a) => restIdOf(a) === dep || restIdOf(a).endsWith("-" + dep)) || digestIds.includes(dep);
+  archived.some((a) => restIdOf(a) === dep) || digestIds.includes(dep);
 const depNodes = new Set();
 const depEdges = [];
 for (const c of changes) {
@@ -255,7 +255,13 @@ const dslText = existsSync(dslPath) ? lib.readText(dslPath).toLowerCase() : null
 md += caps.size
   ? [...caps.entries()]
       .map(([id, ps]) => {
-        let line = `- **${id}** — ${ps.map((p) => (p.source === "living" ? `owner: ${p.path}` : `draft in ${p.source}`)).join(" · ")}`;
+        let line = `- **${id}** — ${ps
+          .map((p) =>
+            p.source === "living"
+              ? `owner: ${p.path}`
+              : `${byIdAll.get(p.source)?.status || "draft"} in ${p.source}`
+          )
+          .join(" · ")}`;
         if (dslText && id.startsWith("cap:")) {
           const folder = id.slice(4).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           if (!new RegExp("cap:" + folder + "(?![a-z0-9._-])").test(dslText)) line += " · ⚠ not tagged in ARCHITECTURE.dsl";

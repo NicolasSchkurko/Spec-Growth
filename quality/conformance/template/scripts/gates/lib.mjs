@@ -597,6 +597,20 @@ export function expandTarget(root, target, tracked) {
   return matches;
 }
 
+// Byte-level LF normalization: strips CR from CRLF pairs so git's autocrlf
+// checkout/restore (LF↔CRLF churn) does not invalidate the fingerprint on Windows.
+function normalizeCrlf(buf) {
+  if (!buf.includes(0x0d)) return buf;
+  const out = Buffer.allocUnsafe(buf.length);
+  let j = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const b = buf[i];
+    if (b === 0x0d && buf[i + 1] === 0x0a) continue;
+    out[j++] = b;
+  }
+  return out.subarray(0, j);
+}
+
 // Content fingerprint of the files covered by the given targets/tests (evidence
 // freshness): survives "commit right after green", catches edits without commit.
 // Literal files: as-is. Directories/globs: code files on disk (includes untracked).
@@ -645,7 +659,7 @@ export function targetsFingerprint(root, paths) {
       }
     }
     if (buf === null) return null; // unreadable file → not evaluable (timestamps fallback)
-    h.update(buf);
+    h.update(normalizeCrlf(buf));
     h.update("\0");
   }
   return h.digest("hex").slice(0, 16);

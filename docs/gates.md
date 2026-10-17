@@ -17,7 +17,7 @@ flowchart TD
     E --> F[open decisions and conflicts]
     F --> G[protected zones: targets + real changed files + ADR cross-check]
     G --> H[capabilities: registry, new-capability collisions,<br/>ARCHITECTURE.dsl tags (both ways); requirement IDs; citations]
-    H --> I[deps resolve against active/archived/compacted]
+    H --> I[deps resolve by exact id against active/archived/compacted]
     I --> J[archive hygiene: unclosed waivers/decisions/conflicts]
     J --> K[test suite: --run-tests]
     K --> L[evidence merge + content-fingerprint staleness]
@@ -33,7 +33,7 @@ flowchart TD
 | `--run-tests` | Runs the project's `test_command` and records **green test evidence** — the CI/verification mode |
 | `--tests-command "CMD"` | Runs `CMD` in **substituted** mode: evidence is recorded but never green. Forbidden in CI |
 | `--scope <id>` | Local focus: reds **from other changes** become warnings. **Report only** — evidence and `gate_ok` are always computed unfiltered |
-| `--pre-archive <id>` | Archive preconditions for one change (incl. tech brief + comprehension sign-off) |
+| `--pre-archive <id>` | Archive preconditions for one change — a fully green run is required (any global error blocks); incl. tech brief + comprehension sign-off |
 | `--diff <base>` | Protected files + unclaimed code files (scope drift) against a git base — for CI |
 | `--json` | Machine-readable report |
 | `--root DIR` | Repo root (defaults to the nearest ancestor with `openspec/changes`) |
@@ -53,7 +53,7 @@ flowchart TD
 ```
 
 - Green is per change and merged across runs: a valid previous green is kept until it goes stale.
-- `--pre-archive` requires **fresh** green: re-run `--run-tests` before archiving if the content moved (any edit — even uncommitted — counts).
+- `--pre-archive` requires **fresh** green and a green suite in the same run: re-run `--run-tests` before archiving if the content moved (any edit — even uncommitted — counts) or the suite is red.
 - Static mode treats missing green as a warning (it must not block your local commit); CI is the real barrier.
 
 ## Protected zones

@@ -10,7 +10,7 @@ Not normally — the agent writes it when you approve. A plain accept needs no A
 `verified` is earned by a green `gate-check --run-tests` run. In static mode (pre-commit) the missing green is only a warning; before archiving it is an error. Run `--run-tests`.
 
 **Why does it say my green evidence is STALE?**
-The content of the change's `targets` or `tests` changed after the last recorded green run — even an uncommitted edit. Committing the already-tested code does **not** stale it (freshness is a content fingerprint; timestamps are only the fallback). Re-run `gate-check --run-tests`.
+The content of the change's `targets` or `tests` changed after the last recorded green run — even an uncommitted edit. Committing the already-tested code does **not** stale it (freshness is a content fingerprint; timestamps are only the fallback), and line endings are normalized (CRLF/LF), so a `git checkout` that rewrites files on Windows does not stale it either. Re-run `gate-check --run-tests`.
 
 **What is `walkthrough.md`, and what happens if I don't understand a change?**
 Changes that touch persistence/state, concurrency, networking, platform SDKs, security or add a dependency are flagged `tech_brief: true`: the agent explains the mechanism in the change's `walkthrough.md`, and `/spec-verify` walks you through 3 questions in your own words (teach-back — the agent validates against the code and corrects you; max 2 rounds). The gate warns until the sign-off; before archiving it is an error — or you grant a `comprehension-debt` waiver (owner + expiry) if you consciously accept the debt.
