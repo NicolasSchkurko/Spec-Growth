@@ -29,20 +29,21 @@ For each anchor task it:
 ## Usage
 
 ```powershell
-$cli = "C:\Users\Luzbelito-WrkLp\AppData\Local\Programs\@opencodedesktop\resources\opencode-cli.exe"
-$env:OPENCODE_BIN = $cli          # optional; defaults to this path
+# Optional: point to the OpenCode CLI if it is not in the default location
+$env:OPENCODE_BIN = "<path to opencode-cli.exe>"
 
 node run.mjs                      # all tasks, mechanical rules only (21 runs)
 node run.mjs t1-add --runs 1      # smoke / single task
 node run.mjs --judge              # include LLM judges (t1, t4, t5)
 node aggregate.mjs                # summary table + summary.md
+node tokens.mjs                   # per-run token usage → tokens.md
 ```
 
-Env overrides: `CONF_MODEL` (agent under test), `CONF_JUDGE` (judge model), `OPENCODE_BIN`.
+Env overrides: `CONF_MODEL` (agent under test), `CONF_JUDGE` (judge model), `OPENCODE_BIN` (CLI executable), `OPENCODE_DB` (session DB read by `tokens.mjs`; defaults to `~/.local/share/opencode/opencode.db`).
 
 ## Cost & time
 
-Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` without `--judge`): 21 agent runs. On `deepseek-v4.1-flash` (~2-4 min per run, concurrency 3): roughly 20-40 min wall clock and single-digit dollars. Start with `t1-add --runs 1` to validate the harness.
+Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` without `--judge`): 21 agent runs. On `deepseek-v4.1-flash` (~2–4 min per run, concurrency 3): roughly 20–40 min wall clock and single-digit dollars. Start with `t1-add --runs 1` to validate the harness.
 
 ## Baseline protocol
 
@@ -51,4 +52,4 @@ Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` with
 3. Apply one change at a time (diet, restructure…) and re-run the identical suite.
 4. Compare per-rule pass rates and pass^k. **The bar: equal or better.**
 
-Recorded baselines: [`BASELINE.md`](BASELINE.md) (2026-10-16, v1.1 work start). Generated artifacts per run: `summary.md` (behavior), `tokens.md` (token usage).
+Recorded baselines: [`BASELINE.md`](BASELINE.md) (2026-10-16, v1.1 work start). Interim results: [`DIET-T1.md`](DIET-T1.md) (token diet + v1.2 restructure). Generated artifacts per run: [`summary.md`](summary.md) (behavior), [`tokens.md`](tokens.md) (token usage).
