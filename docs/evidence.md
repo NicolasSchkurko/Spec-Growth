@@ -53,6 +53,10 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 - **Martinelli, *Spec-Driven Development: From Specs to Code with AI Agents*** (Apress, Aug 2026 · [Springer](https://link.springer.com/book/10.1007/979-8-8688-2851-5)) — the "AI Unified Process", with a pitfalls chapter. The topic reached book form.
 - Also in this wave *(named; not verified here)*: Faithfulness Loss benchmarks; Agent Behavioral Contracts (formal contracts with runtime enforcement); Agyn (multi-agent teams, 72.2% SWE-bench claim).
 
+## Tooling prior art adopted
+
+- **Ponytail** (DietrichGebert, 2026 · [GitHub](https://github.com/DietrichGebert/ponytail), MIT) — "lazy senior dev": a smallest-complete-change ladder (reuse → stdlib → platform → installed dependency → one line → minimum), a ~2k-char regex **codebase map** so "reuse first" costs no search, and a reply rule ("end with what you skipped and any risk"). Its self-reported benchmark (Claude Code, Opus 5.5, 39 tasks) claims −53% code, −45% tokens, −26% cost; 98% of risky logic ships with a test. We adopted the ladder, an adapted map (`scripts/gates/build-map.mjs`) and the closing rule, and validated them with our own frozen suite (`quality/`). Caveat: vendor benchmark, not independently replicated.
+
 ## Critiques — what hits us, and our answers
 
 - **"Waterfall strikes back."** Marmelab ([Zaninotto, Nov 2025](https://marmelab.com/blog/2025/11/12/spec-driven-development-waterfall-strikes-back.html)) and John Ferguson Smart *(reported)*: most spec-driven development is waterfall with an AI doing the typing — agility buried under layers of Markdown.
