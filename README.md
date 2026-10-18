@@ -106,7 +106,7 @@ The system is research-backed, and it says which part. The core architecture fol
 
 ## Status
 
-**v1.2**, hardened through adversarial audit rounds (v0.5 → v1.2) and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented — and what is deliberately not — lives in `SKILL.md` → [`references/status.md`](references/status.md). The honest limits, in short:
+**v1.3**, hardened through adversarial audit rounds (v0.5 → v1.3) and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. The token-saving mechanics — the reuse-first ladder, the compact codebase map (`build-map.mjs`) and the "what you skipped" reply rule — are **based on [Ponytail](https://github.com/DietrichGebert/ponytail)'s implementation** (MIT). What is implemented — and what is deliberately not — lives in `SKILL.md` → [`references/status.md`](references/status.md). The honest limits, in short:
 
 - evidence is local and unsigned — the barrier that counts is CI running `--run-tests`;
 - `--scope` affects the local report only;
@@ -114,3 +114,12 @@ The system is research-backed, and it says which part. The core architecture fol
 - the comprehension sign-off is a ritual record — its value is the teach-back conversation, not the checkbox.
 
 Since v1.2, `/spec-gate` and `/diagram-sync` run as background subagents on a cheap model; interactive commands inherit the session model (see `SKILL.md` → *Model routing*).
+
+## License
+
+MIT — see [LICENSE](LICENSE). The codebase map (`build-map.mjs`) is adapted from [Ponytail](https://github.com/DietrichGebert/ponytail) (MIT); see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+## Security
+
+Static security scan (SkillSpector, NVIDIA): **MEDIUM/CAUTION, no HIGH/CRITICAL findings** — findings and triage in [docs/security.md](docs/security.md). Re-scan after changes; a new HIGH/CRITICAL is a blocker.
+
