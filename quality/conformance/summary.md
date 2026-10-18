@@ -1,6 +1,6 @@
 # Conformance summary
 
-Generated: 2026-10-16T22:16:16.535Z · model: opencode-go/deepseek-v4.1-flash · runs: 29
+Generated: 2026-10-18T16:45:10.380Z · model: opencode-go/deepseek-v4.1-flash · runs: 29
 
 ## t1-add — pass^5: YES (5/5 runs all-pass)
 
@@ -46,14 +46,13 @@ Generated: 2026-10-16T22:16:16.535Z · model: opencode-go/deepseek-v4.1-flash ·
 | t4.not-archived | 5/5 | 0 |
 | t4.todo-intact | 5/5 | 0 |
 
-## t5-explain — pass^6: NO (4/6 runs all-pass)
+## t5-explain — pass^6: NO (5/6 runs all-pass)
 
 | rule | pass rate | fails |
 |---|---|---|
-| judge.t5-explain | 4/6 | 2 |
+| judge.t5-explain | 5/6 | 1 |
 | t5.citations | 6/6 | 0 |
 | t5.no-code-edits | 6/6 | 0 |
 
-- run3 (27s): `judge.t5-explain` — score=4 The core mechanism is explained accurately, but the claim that the file does not exist before the first save is materially wrong because loadSettings() reads an existing file.
 - run6 (29s): `judge.t5-explain` — score=4 La explicación es mayormente precisa, pero describe como atómica una escritura directa con writeFileSync.
 
