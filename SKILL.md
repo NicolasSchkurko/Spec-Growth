@@ -100,7 +100,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 - **Decisions**: anything beyond your authority is not decided in silence: it goes to `open_decisions`. If the change **contradicts something already decided or written** (ADR, living requirement, in-force waiver), it goes to `conflicts` (⚔) and awaits explicit approval.
 - **Protected**: never set `human_approved: true` on your own; the human indicates it explicitly.
 - **Capabilities**: declare `provides: [cap:x]` in the owning spec; do not create duplicates.
-- **Reuse first** (code minimalism): the ladder lives in `AGENTS.md`. Orient before exploring: `codebase-memory` MCP when connected, otherwise `node scripts/gates/build-map.mjs` (zero-dependency fallback).
+- **Reuse first** (code minimalism): the ladder lives in `AGENTS.md`. Orient before exploring: the **native LSP tool** for symbols (`lsp: true`; grep for literals), `codebase-memory` only in large repos, and `node scripts/gates/build-map.mjs` as the zero-dependency fallback.
 - **Tech brief**: when a change touches persistence/state, concurrency, networking, platform SDKs, security or adds a dependency, declare `tech_brief: true`; write `walkthrough.md` in the plainest language and generate 3 change-specific questions at apply. **Never fake the human's answers** — the sign-off is theirs, recorded only after their explicit confirmation.
 - The agent proposes and executes; **the human decides**. One apply = one branch = one change.
 - **Clean context** when implementing: a fresh (or deliberately compacted) session (mixed evidence: one study with a modest result, p≈0.07 — a reasonable heuristic, not a universal law).

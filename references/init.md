@@ -19,9 +19,10 @@ AGENTS.md                  # constitution (Spec Growth section)
 
 1. **Preconditions**: git repo; `node --version` ≥ 20.19; `npm --version`. If something is missing, stop and report.
 2. **OpenSpec**: `openspec --version`; if missing → `npm install -g @fission-ai/openspec@<version>` (pinned; avoid `@latest` for team/CI installs). Then `openspec init` (if not initialized), with OpenCode among the tools. Verify `openspec validate --all` runs.
-3. **MCPs** (check with `opencode mcp list`; add ONLY the missing ones, pinning a concrete reviewed version — never `@latest`):
-   - `opencode mcp add codebase-memory --global -- npx -y codebase-memory-mcp@X.Y.Z` (the primary code index — the zero-dependency fallback is `scripts/gates/build-map.mjs`)
-   - `opencode mcp add structurizr --global --url https://mcp.structurizr.com/mcp` (hosted remote MCP: review its OAuth scopes before connecting; optional)
+3. **Code indexing** (defaults first; MCPs only when needed — pin a concrete reviewed version, never `@latest`):
+   - **Default (small/medium repos)**: the **native LSP tool** — `"lsp": true` in the OpenCode config plus `OPENCODE_EXPERIMENTAL_LSP_TOOL=true`; language servers auto-install (e.g., `kotlin-ls` for Kotlin). Pair it with grep (literals) and `node scripts/gates/build-map.mjs` (orientation; the zero-dependency fallback for headless/CI).
+   - **Large repos only** (multi-language, deep call graphs, structural queries hurting): `opencode mcp add codebase-memory --global -- npx -y codebase-memory-mcp@X.Y.Z`
+   - Diagrams: `opencode mcp add structurizr --global --url https://mcp.structurizr.com/mcp` (hosted remote MCP: review its OAuth scopes before connecting; optional)
 4. **Schema**: `openspec schema fork spec-driven spec-anchored` (if missing) + the patch in `assets/scaffold/schema-patch.md`; validate with `openspec schema validate spec-anchored`.
 5. **Scaffold** (copy/merge from `assets/scaffold/`):
    - `config.yaml` → `openspec/config.yaml` (MERGE: do not overwrite existing keys or `protected:`)
