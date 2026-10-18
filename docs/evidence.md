@@ -4,8 +4,6 @@ The core architecture follows one primary source — **The Spec Growth Engine** 
 
 This page records what each mechanism is based on, what transfers and what does not, the critiques this approach attracts (some of which hit us), and the consolidated known limits.
 
-**Sourcing note.** arXiv links on this page were checked when written (2026-10-16), and the described findings match the published abstracts. Non-arXiv items link to their canonical pages. Quotes attributed to named authors, and figures marked *(reported)*, come from the linked material but were not independently re-run.
-
 ## Primary source → what it shapes here
 
 *The Spec Growth Engine: Spec-Anchored, Code-Coupled, Drift-Enforced Architecture for AI-Assisted Software Development* (H. Grabowski, [arXiv:2606.27045](https://arxiv.org/abs/2606.27045), v2, Oct 2026).
@@ -64,7 +62,7 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 - **Output vs outcome.** Scrum.org, [*SDD Isn't Waterfall — Unless You're Using It That Way*](https://www.scrum.org/resources/blog/spec-driven-development-isnt-waterfall-unless-youre-using-it-way): returns to specifying arrive early, and a faithfully implemented spec can still ship "AI capabilities that weren't moving the needle."
   *Our answer:* honest gap — **nothing in the system asks whether a change is worth doing**; the only outcome gate is human acceptance, and it is subjective. This is the deepest open problem, not a solved one.
 - **Determinism and variance.** *Citation Discipline in Spec-Driven Development* ([arXiv:2606.30689](https://arxiv.org/abs/2606.30689)): prose-spec toolkits can *reduce* output determinism versus plain prompts (Spec Kit the highest variance *(reported)*); but per-requirement citations unlock automated hallucination detection — TDR **86.4–88.0% vs 0%** uncited, at 0% false positives. *Caveat:* the cited tool (traceSDD) is the author's own.
-  *Our answer:* the gate already understands `[REQ-…]` IDs and `@cita` cross-checks when a repo opts in; making that first-class is a candidate below.
+  *Our answer:* the gate already understands `[REQ-…]` IDs and `@cita` cross-checks when a repo opts in; making that first-class is a candidate.
 - **Context rot inside skills.** The same study above: loading a skill does not keep its requirements active through long trajectories — discipline cannot live only in Markdown.
   *Our answer:* invariants live in deterministic scripts (the gate), not prose; prompts shrink over time (token diet), gates stay.
 - **Tooling and instruction bloat.** [Thoughtworks Radar Vol. 34](https://www.thoughtworks.com/content/dam/thoughtworks/documents/radar/2026/04/tr_technology_radar_vol_34_en.pdf) (Apr 2026): "agent instruction bloat… instructions become long and sometimes conflict"; Fowler's review of SDD tools: [overkill for the size of the problem](https://martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html); a community field study *(reported)*: Kiro turning one bug into 16 acceptance criteria.
@@ -78,7 +76,6 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 - **Trend-level results**: the context-length effect in arXiv:2607.17937 is large but trend-level (p=0.0698) and explicitly not a universal threshold — treat it as a prudence argument for lean contexts, not a law.
 - **Qualitative vs experimental**: Ahmad is a qualitative study of accumulated debt — treat it as the problem statement, not a measured effect.
 - **Vendor/author tools**: the TDR figures come from the authors' own tool; the Tufano evaluation is by Google engineers on Google bugs; Agyn's 72.2% is a self-reported claim. Directionally useful, not neutral.
-- **Our own gate verifies the ritual, not the understanding**: it can check that a walkthrough exists, is complete and is signed — it cannot check that you actually understood it. That is a documented limit below, not a hidden one.
 
 ## Known limits (consolidated)
 
@@ -90,6 +87,7 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 | Approval flags (`human_approved`, waiver `granted`, `accepted_by`, `understood_by`) are written by the agent on the human's explicit sentence | `human_approved` and waivers are cross-checked against `DECISIONS.md`; the rest relies on discipline (documented) |
 | `--scope` downgrades foreign reds **in the report only** | Evidence and `gate_ok` are always computed unfiltered; never use it in CI |
 | Comprehension can be escaped with a `comprehension-debt` waiver (owner + expiry) | Intentional: conscious debt over silent debt. The walkthrough artifact itself is still required |
+| The comprehension sign-off is a **ritual record** — the gate verifies that the walkthrough exists, is complete and signed, not that understanding happened | The value is the interactive teach-back in `/spec-verify`; keep it conversational, never a checkbox session |
 | Compaction keeps only the mechanism line of a walkthrough | The full text remains in git history |
 | Capabilities are dormant until the C4 model is tagged (`cap:<capability>`) | Warnings guide `/diagram-sync`; nothing breaks meanwhile |
 | Gates never depend on MCPs (Structurizr / codebase-memory) | Structural and code graphs are interactive-session enhancements; CI stays deterministic |
