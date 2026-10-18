@@ -55,7 +55,7 @@ Implementation companion: [arXiv:2610.11725](https://arxiv.org/abs/2610.11725) �
 
 ## Tooling prior art adopted
 
-- **Ponytail** (DietrichGebert, 2026 · [GitHub](https://github.com/DietrichGebert/ponytail), MIT) — "lazy senior dev": a smallest-complete-change ladder (reuse → stdlib → platform → installed dependency → one line → minimum), a ~2k-char regex **codebase map** so "reuse first" costs no search, and a reply rule ("end with what you skipped and any risk"). Its self-reported benchmark (Claude Code, Opus 5.5, 39 tasks) claims −53% code, −45% tokens, −26% cost; 98% of risky logic ships with a test. We adopted the ladder, an adapted map (`scripts/gates/build-map.mjs`) and the closing rule, and validated them with our own frozen suite (`quality/`). Caveat: vendor benchmark, not independently replicated.
+- **Ponytail** (DietrichGebert, 2026 · [GitHub](https://github.com/DietrichGebert/ponytail), MIT) — "lazy senior dev": a smallest-complete-change ladder (reuse → stdlib → platform → installed dependency → one line → minimum), a ~2k-char regex **codebase map** so "reuse first" costs no search, and a reply rule ("end with what you skipped and any risk"). Its self-reported benchmark (Claude Code, Opus 5.5, 39 tasks) claims −53% code, −45% tokens, −26% cost; 98% of risky logic ships with a test. **Our token-saving implementation is based on it**: we adopted the ladder, an adapted map (`scripts/gates/build-map.mjs`) and the closing rule, and validate them with our own frozen suite (`quality/`). Caveat: vendor benchmark, not independently replicated.
 
 ## Critiques — what hits us, and our answers
 

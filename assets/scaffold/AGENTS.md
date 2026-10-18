@@ -26,8 +26,6 @@ Before writing code, take the first option that fully works: (1) does it need to
 
 Be lazy about the solution, never about the change: finish every caller, test and fixture it breaks. Never cut trust-boundary validation, error handling that prevents data loss, security or accessibility. A shortcut with a known limit gets: `shortcut: <limit>, <when to upgrade>`.
 
-Orient with `node scripts/gates/build-map.mjs` (folders → exported names) before exploring; open a file only when you need its details. End coding replies with one or two lines: what you skipped or did not check, and any risk.
-
 ## Code expressivity (generation rules)
 
 - Never call platform/persistence/network APIs raw from domain or UI logic — wrap them in functions whose names state the effect and the medium (e.g. `saveThemeToLocalDataStore()`, not a bare `prefs.edit().putString`).

@@ -100,4 +100,12 @@ This system is research-backed, and it says how: the core architecture follows *
 
 ## Status
 
-**v1.2.** Iterated through adversarial audit rounds and empirical validation (v0.5 → v1.2), including a frozen conformance suite (`quality/` in this repo) and a measured token diet. The current state of what is implemented, and its known limits, lives in `SKILL.md` → `references/status.md`. Notable limits: evidence is local and unsigned (the real barrier is CI running `--run-tests`); `--scope` affects the local report only; flag-based approvals rely on agent discipline plus the ADR cross-check; the comprehension sign-off is a ritual record — the value is the teach-back conversation, not the checkbox. Since v1.2, `/spec-gate` and `/diagram-sync` run as background subagents on a cheap model; interactive commands inherit the session model (see `SKILL.md` → *Model routing*).
+**v1.3.** Iterated through adversarial audit rounds and empirical validation (v0.5 → v1.3), including a frozen conformance suite (`quality/` in this repo) and a measured token diet. The token-saving mechanics — the reuse-first ladder, the compact codebase map (`build-map.mjs`) and the "what you skipped" reply rule — are **based on [Ponytail](https://github.com/DietrichGebert/ponytail)'s implementation** (MIT). The current state of what is implemented, and its known limits, lives in `SKILL.md` → `references/status.md`. Notable limits: evidence is local and unsigned (the real barrier is CI running `--run-tests`); `--scope` affects the local report only; flag-based approvals rely on agent discipline plus the ADR cross-check; the comprehension sign-off is a ritual record — the value is the teach-back conversation, not the checkbox. Since v1.2, `/spec-gate` and `/diagram-sync` run as background subagents on a cheap model; interactive commands inherit the session model (see `SKILL.md` → *Model routing*).
+
+## License
+
+MIT — see [LICENSE](LICENSE). The codebase map (`build-map.mjs`) is adapted from [Ponytail](https://github.com/DietrichGebert/ponytail) (MIT); see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+## Security
+
+Static security scan (SkillSpector, NVIDIA): **MEDIUM/CAUTION, no HIGH/CRITICAL findings** — findings and triage in [docs/security.md](docs/security.md). Re-scan after changes; a new HIGH/CRITICAL is a blocker.

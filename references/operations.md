@@ -4,4 +4,4 @@
 
 **Gate policy**: pre-commit (hook) → static `gate-check` (seconds). CI on PR → `gate-check --run-tests --diff <base>` + `openspec validate --all --strict`. Before archiving → `gate-check --pre-archive <id>` **OK**. Weekly → advisory semantic pass (`/spec-verify`).
 
-**Map**: `build-map.mjs [--root DIR]` prints a ~2k-char codebase map (folders → exported names; budget via `SPEC_GROWTH_MAP_CHARS`). Orient with it before exploring; open files only for details. Regex-based, not a parser: nested or dynamic definitions may be missed (adaptation of Ponytail's map, MIT).
+**Map**: `build-map.mjs [--root DIR]` prints a ~2k-char codebase map (folders → exported names; budget via `SPEC_GROWTH_MAP_CHARS`). Orient with it before exploring; open files only for details. Regex-based, not a parser: nested or dynamic definitions may be missed (adaptation of Ponytail's map, MIT). If the **`codebase-memory` MCP** is connected, prefer its graph queries for structural questions (callers, impact); this map is the zero-dependency fallback for headless/CI sessions or repos without MCPs.
