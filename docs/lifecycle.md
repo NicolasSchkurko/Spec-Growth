@@ -1,5 +1,7 @@
 # Lifecycle & approvals
 
+How a change moves from idea to archive, and exactly what each approval records.
+
 ## The life of a change
 
 ```mermaid
@@ -19,11 +21,11 @@ stateDiagram-v2
     superseded --> [*]
 ```
 
-The gate does not run a transition engine: it validates the **invariants of the recorded state** (a `verified` without local green evidence is a warning; with pending decisions it is an error, and so on). Transitions are process, not plumbing.
+There is no workflow engine. Transitions are process, and the gate validates the **invariants of the recorded state**: a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
 
 ## The approval circuit
 
-One rule for everything: **the human authorizes with an explicit sentence; the agent writes the record; the gate verifies the record.** Never the other way around, never by silence.
+One rule covers every approval: **the human authorizes with an explicit sentence; the agent writes the record; the gate verifies the record.** Never the other way around, never by silence.
 
 ```mermaid
 sequenceDiagram
@@ -39,7 +41,7 @@ sequenceDiagram
     end
 ```
 
-You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which walks you through each pending item. Hand-editing works too — the gate checks the record, not the author (that is a documented limit; the risky approvals are cross-checked against `DECISIONS.md`).
+You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which walks you through each pending item. Hand-editing works too, because the gate checks the record, not its author (a documented limit — the risky approvals are cross-checked against `DECISIONS.md`).
 
 ## What to record for each kind of approval
 
@@ -63,7 +65,7 @@ accepted_by: "Nicolas"
 accepted_at: "2026-10-16"
 ```
 
-The gate only warns if these fields are missing — but they are the acceptance record, so fill them.
+The gate only warns when these fields are missing — but they are the acceptance record, so fill them in.
 
 ### Example: approving a protected zone
 
@@ -83,7 +85,7 @@ human_approved: true
 - **Refs:** openspec/changes/dark-mode/.openspec.yaml
 ```
 
-The gate looks inside each `##` section: if the heading mentions the change id (`dark-mode`), any approval line in that section counts — so the shape above works. Without a heading, the id and the approval word must share the same line. Negations (`rejected`, `not approved`, `disapproved`) never count, and mentioning `dark-mode-extra` does not count for `dark-mode`.
+The gate looks inside each `##` section: if the heading mentions the change id as a word (`dark-mode`), any approval line in that section counts — so the shape above works. Without a heading, the id and the approval word must share the same line. Negations (`rejected`, `not approved`, `disapproved`) never count, and a mention of `dark-mode-extra` does not count for `dark-mode`.
 
 ## What awaits you
 

@@ -85,12 +85,19 @@ function spawnAgent(cwd, message, model, timeoutMs, title) {
   return new Promise((resolve) => {
     const args = ["run", message, "--model", model, "--auto"];
     if (title) args.push("--title", title);
-    const child = spawn(CLI, args, {
-      cwd,
-      env: { ...process.env, NO_COLOR: "1" },
-      windowsHide: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    let child;
+    try {
+      child = spawn(CLI, args, {
+        cwd,
+        env: { ...process.env, NO_COLOR: "1" },
+        windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (err) {
+      // Windows raises some spawn failures synchronously (e.g. EFTYPE).
+      resolve({ stdout: "", stderr: `${(err && err.message) || err}\n`, code: "spawn-error", timedOut: false, durationMs: 0 });
+      return;
+    }
     let stdout = "";
     let stderr = "";
     let timedOut = false;
@@ -101,6 +108,10 @@ function spawnAgent(cwd, message, model, timeoutMs, title) {
     }, timeoutMs);
     child.stdout.on("data", (d) => (stdout += d));
     child.stderr.on("data", (d) => (stderr += d));
+    child.on("error", (err) => {
+      clearTimeout(killer);
+      resolve({ stdout, stderr: `${stderr}${(err && err.message) || err}\n`, code: "spawn-error", timedOut: false, durationMs: Date.now() - started });
+    });
     child.on("close", (code) => {
       clearTimeout(killer);
       resolve({ stdout, stderr, code, timedOut, durationMs: Date.now() - started });
@@ -109,11 +120,25 @@ function spawnAgent(cwd, message, model, timeoutMs, title) {
 }
 
 function parseJudgeJson(text) {
+  // Preferred form: the instructed single JSON line, parsed as a whole, so braces
+  // inside `reasons` are harmless.
+  const lines = text.split(/\r?\n/);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (!t.startsWith("{") || !t.endsWith("}")) continue;
+    try {
+      const obj = JSON.parse(t);
+      if (obj && typeof obj.verdict === "string") return obj;
+    } catch {
+      /* keep scanning */
+    }
+  }
+  // Fallback: a pretty-printed single object (previous behavior).
   const matches = [...text.matchAll(/\{[\s\S]*?\}/g)];
   for (let i = matches.length - 1; i >= 0; i--) {
     try {
       const obj = JSON.parse(matches[i][0]);
-      if (typeof obj.verdict === "string") return obj;
+      if (obj && typeof obj.verdict === "string") return obj;
     } catch {
       /* keep scanning */
     }
@@ -148,6 +173,8 @@ async function runOne(task, index) {
   const runBase = join(RUNS, task.id, `run${index + 1}`);
   mkdirSync(runBase, { recursive: true });
   const repo = buildRepo(task, runBase);
+  // The commit the agent starts from: checkers measure "touched X" against it.
+  writeFileSync(join(runBase, "base.txt"), gOut(repo, ["rev-parse", "HEAD"]) + "\n");
 
   const r = await spawnAgent(repo, task.prompt, MODEL, TIMEOUT_MS, `conf ${task.id} run${index + 1}`);
   writeFileSync(join(runBase, "transcript.txt"), r.stdout);
@@ -196,6 +223,15 @@ if (!existsSync(CLI)) {
   process.exit(1);
 }
 
+// Batch marker: aggregate.mjs uses it to exclude stale runs from earlier batches
+// and to flag missing runs instead of silently shrinking pass^k.
+for (const t of selected) {
+  mkdirSync(join(RUNS, t.id), { recursive: true });
+  writeFileSync(
+    join(RUNS, t.id, "batch.json"),
+    JSON.stringify({ startedAt: new Date().toISOString(), runs: opts.runs ?? t.runs, model: MODEL, judge: opts.judge }, null, 2)
+  );
+}
 const jobs = selected.flatMap((t) =>
   Array.from({ length: opts.runs ?? t.runs }, (_, i) => [t, i])
 );

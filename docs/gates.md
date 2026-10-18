@@ -3,27 +3,28 @@
 Two mechanisms keep the system honest:
 
 - **The mechanical gate** (`scripts/gates/gate-check.mjs`) — deterministic, dependency-free Node. It runs on pre-commit, in CI, and before archiving. It **measures and records**; it fixes nothing.
-- **The semantic pass** (`/spec-verify`) — an advisory audit by an agent: requirements without implementation, implemented behavior no spec describes, tests that prove something else. Findings are persisted in `findings.md`.
+- **The semantic pass** (`/spec-verify`) — an advisory audit by an agent: requirements without implementation, implemented behavior no spec describes, tests that prove something else, opaque code. Findings are persisted in `findings.md`.
 
 ## What the mechanical gate checks
 
-```mermaid
-flowchart TD
-    A[parse .openspec.yaml and specs] --> B[status and kind enums; reason; superseded_by]
-    B --> C[overlaps: containment + globs<br/>error only with applying work; deps-sequenced pairs → warning]
-    C --> D["[@test] paths exist; fix/refactor need a regression"]
-    D --> D2[tech brief: walkthrough + comprehension sign-off<br/>tasks.md / findings.md open items]
-    D2 --> E[waivers: valid granted enables; requested/expired block]
-    E --> F[open decisions and conflicts]
-    F --> G[protected zones: targets + real changed files + ADR cross-check]
-    G --> H[capabilities: registry, new-capability collisions,<br/>ARCHITECTURE.dsl tags (both ways); requirement IDs; citations]
-    H --> I[deps resolve against active/archived/compacted]
-    I --> J[archive hygiene: unclosed waivers/decisions/conflicts]
-    J --> K[test suite: --run-tests]
-    K --> L[evidence merge + content-fingerprint staleness]
-    L --> M[--pre-archive preconditions, when requested]
-    M --> N[report + evidence.json + exit code]
-```
+In order:
+
+1. **Metadata and states** — `status` and `kind` enums; `reason`; `superseded_by`.
+2. **Overlaps** — target containment and globs; an error only when the work is `applying`, and dependency-sequenced pairs warn instead.
+3. **Tests** — every `[@test]` path exists; `fix` and `refactor` changes carry a regression test.
+4. **Open work items** — `tasks.md` and `findings.md` open items warn on an `applying`/`verified` change.
+5. **Tech brief** — `walkthrough.md` completeness and the comprehension sign-off (warning in static mode, error in `--pre-archive`).
+6. **Waivers** — a valid granted waiver enables; `requested` and expired ones block.
+7. **Decisions and conflicts** — pending entries block `verified` and `--pre-archive`.
+8. **Protected zones** — declared `targets` plus real changed files (working tree, staged, untracked), with the `DECISIONS.md` cross-check.
+9. **Capabilities** — the registry, new-capability collisions, `ARCHITECTURE.dsl` tags in both directions; requirement IDs and citations.
+10. **Dependencies** — resolve by exact id against active, archived, and compacted changes.
+11. **Archive hygiene** — unclosed waivers, decisions, or conflicts.
+12. **Test suite** (`--run-tests`) — runs `test_command`; a red suite is a global error.
+13. **Evidence** — merge across runs, and content-fingerprint staleness.
+14. **`--pre-archive` preconditions**, when requested.
+
+Every run ends with a report, an updated `evidence.json`, and an exit code: `0` when there are no errors, `1` otherwise.
 
 ## Modes and flags
 
@@ -31,14 +32,14 @@ flowchart TD
 |---|---|
 | *(none)* | **Static** — seconds; the pre-commit mode. Produces no green |
 | `--run-tests` | Runs the project's `test_command` and records **green test evidence** — the CI/verification mode |
-| `--tests-command "CMD"` | Runs `CMD` in **substituted** mode: evidence is recorded but never green. Forbidden in CI |
+| `--pre-archive <id>` | Archive preconditions for one change — a fully green run is required (any global error blocks); includes tech brief + comprehension sign-off |
+| `--diff <base>` | Protected files touched without approval, plus code files unclaimed by any active change (scope drift), against a git base — for CI |
 | `--scope <id>` | Local focus: reds **from other changes** become warnings. **Report only** — evidence and `gate_ok` are always computed unfiltered |
-| `--pre-archive <id>` | Archive preconditions for one change (incl. tech brief + comprehension sign-off) |
-| `--diff <base>` | Protected files + unclaimed code files (scope drift) against a git base — for CI |
+| `--tests-command "CMD"` | Runs `CMD` in **substituted** mode: evidence is recorded but never green. Forbidden in CI |
 | `--json` | Machine-readable report |
 | `--root DIR` | Repo root (defaults to the nearest ancestor with `openspec/changes`) |
 
-Exit code: `0` when there are no errors, `1` otherwise. Every run writes `openspec/evidence.json`.
+Every run writes `openspec/evidence.json`.
 
 ## Evidence rules
 
@@ -53,8 +54,8 @@ flowchart TD
 ```
 
 - Green is per change and merged across runs: a valid previous green is kept until it goes stale.
-- `--pre-archive` requires **fresh** green: re-run `--run-tests` before archiving if the content moved (any edit — even uncommitted — counts).
-- Static mode treats missing green as a warning (it must not block your local commit); CI is the real barrier.
+- `--pre-archive` requires **fresh** green **and** a green suite in the same run. Re-run `--run-tests` before archiving if the content moved (any edit — even uncommitted — counts) or the suite is red.
+- Static mode treats missing green as a warning, so it never blocks your local commit; CI is the real barrier.
 
 ## Protected zones
 
