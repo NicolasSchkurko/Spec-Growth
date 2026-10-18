@@ -39,8 +39,6 @@ Every run ends with a report, an updated `evidence.json`, and an exit code: `0` 
 | `--json` | Machine-readable report |
 | `--root DIR` | Repo root (defaults to the nearest ancestor with `openspec/changes`) |
 
-Every run writes `openspec/evidence.json`.
-
 ## Evidence rules
 
 ```mermaid

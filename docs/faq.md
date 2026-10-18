@@ -53,7 +53,7 @@ A living capability (a spec folder, `cap:<capability>`) is realized by no compon
 **Can I change which model runs `/spec-gate` or `/diagram-sync`?**
 Yes. Those two run as **background subagents with a cheap model** (`opencode-go/space-bunny` by default), so their work never pollutes your session. Change it in the command's frontmatter — `.opencode/commands/spec-gate.md` (or `diagram-sync.md`): `model: provider/model#variant` and `subagent: true|false` (or `agent: <id>` to route via another agent). Commands reload automatically, no restart needed. Remove the `model` line to fall back to the agent's model, then to your session's model. The interactive commands (`add`, `triage`, `apply`, `verify`, `explain`, `resolve`) always inherit your session model — the assumption is that it is your most capable one. Full table: `SKILL.md` → *Model routing*.
 
-## Meta
+## About
 
 **Is Spec Growth based on research?**
 Partly, and it says which part: the comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — novice-heavy populations, so the mechanisms transfer but the effect sizes do not. The rest is engineering practice from audit rounds. Full map and caveats: [Evidence & limits](evidence.md).

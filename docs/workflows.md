@@ -1,6 +1,6 @@
 # Workflows
 
-Recipes for the situations that actually come up. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
+Recipes for the situations that come up most. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
 
 ## 1. A new feature
 
@@ -54,7 +54,7 @@ Same flow as a feature, with `kind: refactor`. The contract does not change, so 
 1. `/spec-add` warns: "🔒 this will require your explicit approval".
 2. You review the risk and **explicitly approve** (or not).
 3. The agent records `human_approved: true` **and** appends the approval line to `DECISIONS.md`.
-4. While the change is `applying`, an unapproved zone touch is an error; after `verified`, regularize it.
+4. An unapproved zone touch is an error while the change is `applying` (and stays an error later, until the record exists).
 
 ## 5. Requesting a waiver (and granting it)
 

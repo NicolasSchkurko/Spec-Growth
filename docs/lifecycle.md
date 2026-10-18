@@ -21,7 +21,7 @@ stateDiagram-v2
     superseded --> [*]
 ```
 
-There is no workflow engine. Transitions are process, and the gate validates the **invariants of the recorded state**: a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
+There is no workflow engine: the transitions are what you do next, and the gate only validates the **invariants of the recorded state** — a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
 
 ## The approval circuit
 
