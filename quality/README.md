@@ -4,6 +4,8 @@ Everything in this folder exists to answer one question: **does the system (stil
 
 | Path | What it is |
 |---|---|
+| [`gates.test.mjs`](gates.test.mjs) | Functional tests for the gate scripts (`node --test quality/gates.test.mjs`): invariants, waivers, zones, evidence, pre-archive, generated views — offline, ~5 s |
+| [`dispatch-smoke.mjs`](dispatch-smoke.mjs) | Real-CLI smoke for the V2 wiring (`node quality/dispatch-smoke.mjs`): command → agent → background child, and parent → `subagent` tool → configured child. Probes per-agent `permissions` and reports whether the runtime enforces them |
 | [`conformance/`](conformance/README.md) | The frozen conformance suite: anchor tasks run against the real agent, mechanical checkers plus a cross-family LLM judge |
 | [`conformance/BASELINE.md`](conformance/BASELINE.md) | The starting point (2026-10-16): per-rule pass rates and token usage, frozen for comparison |
 | [`conformance/DIET-T1.md`](conformance/DIET-T1.md) | Results of the token diet and the v1.2 restructure, measured against the baseline |

@@ -8,6 +8,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Tr
    - `subagent` → **`spec-explainer`**, **`background: true`**: trace the observed behavior in the real code (`file:line`), **no note** — return the digest only.
    - `subagent` → **`spec-recon`**, **`background: true`**: which requirement covers that behavior, and whether a recorded decision already settles it.
    - If a child fails or times out, do that side yourself and say so.
+   - When both return, `git status --porcelain` must show no change: these children are read-only by contract, and per-agent `permissions` are not enforced by this build (see `references/status.md`). If the tree moved, restore it and report it.
 2. **State the discrepancy in one sentence**: "the code does X (`file:line`); the spec says Y (`REQ id` / no requirement)" — using the citations the children returned. Verify the key ones yourself before quoting them.
 3. **ASK THE USER** — in **one message**, with both sides ready: *who is right, the code or the spec?* Give the options and your recommendation (marked as such). Do not continue without an answer.
 4. **Record the decision** in `DECISIONS.md` (append): date · title · context · decision · consequences · refs (file:line + spec).

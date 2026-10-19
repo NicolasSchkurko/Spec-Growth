@@ -9,7 +9,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ex
    - Several **independent** behaviors named in the request → one child each, **cap 3**, then merge.
    - Tiny topic (a single function or file you can already name) → trace it **in this session**: a child would spend time re-gathering what you have.
    - If the child fails or times out, do the trace yourself and say so.
-2. **Verify, then deliver in your own words**: read the note (or the digest), check the **key hops** yourself (`file:line`), and resolve or report every `unclear:` the child left. The human asked *you*: never relay a child's prose unread. If the topic maps to no spec, say so plainly (it may deserve `/spec-triage` or `/spec-add`).
+2. **Verify, then deliver in your own words**: read the note (or the digest), check the **key hops** yourself (`file:line`), and resolve or report every `unclear:` the child left. Then run `git status --porcelain`: the only acceptable change is the mechanism note under `docs/mechanisms/` — the explainer is read-only elsewhere by contract, and per-agent `permissions` are not enforced by this build (see `references/status.md`). The human asked *you*: never relay a child's prose unread. If the topic maps to no spec, say so plainly (it may deserve `/spec-triage` or `/spec-add`).
 3. **Deliver the explanation** in the plainest language (the human may not know this part of the stack):
    - Step-by-step mechanism (event → … → result).
    - Physical traceability: files, preferences/database/keys, lifecycle (when created, updated, deleted).

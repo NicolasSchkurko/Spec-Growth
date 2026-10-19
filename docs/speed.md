@@ -26,7 +26,7 @@ Both commands now **dispatch and join**. They stay in the session — they own t
 
 Two things make this safe and honest:
 
-- **Children are scoped, not trusted.** The auditor is **read-only by permission** (`edit`, `shell` and `subagent` denied): "the machine detects, the human decides". The implementer may write code, but never `openspec/**`, `.git/**` or `.env*` — and only inside the files the brief names. The walkthrough drafter writes **only inside `openspec/changes/`**, with `edit` and never `write`, and only the `status`/`tech_brief` keys plus its own file.
+- **Children are scoped by contract, and the parent checks the tree.** Each agent declares its scope in `permissions` (`edit`/`shell` denied for the auditor, `openspec/**` denied for the implementer) — but **this OpenCode build does not enforce agent permissions**: `quality/dispatch-smoke.mjs` had a denied edit create a file anyway. The real control is the parent, which runs `git status --porcelain` / `git diff --stat` after a child returns, reverts anything out of scope and reports it. Read-only is the contract; the tree is the evidence.
 - **The parent is accountable.** The implementer's diff is checked against the brief before anything else; the walkthrough is verified claim by claim (`file:line`) before the parent reports it; the findings the auditor returns are vetted before being relayed. A child that invents evidence, widens the blast radius or forgets a test is a finding about the child.
 
 ### `/spec-apply`

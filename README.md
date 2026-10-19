@@ -70,6 +70,15 @@ quality/            the conformance suite and its recorded results
 
 **v1.5 prototype** (branch `experiment/fast-path`) — speeds up the two slow commands: `/spec-apply` and `/spec-verify` now dispatch the independent read-only work (test suite, per-change semantic audit, tech brief) to scoped child sessions and join the results, without relaxing the gate, the evidence or any human-only record ([Speed](docs/speed.md)). **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
 
+## Tests
+
+```bash
+node --test quality/gates.test.mjs     # gate scripts: invariants, evidence, generated views (offline, ~5 s)
+node quality/dispatch-smoke.mjs        # V2 wiring against the real CLI (free model, ~2 min)
+```
+
+The conformance suite (`quality/conformance/`) is the expensive one — real agent runs with judges, ~20–40 min.
+
 ## License
 
 MIT — see [LICENSE](LICENSE). The codebase map (`build-map.mjs`) is adapted from [Ponytail](https://github.com/DietrichGebert/ponytail) (MIT); see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
