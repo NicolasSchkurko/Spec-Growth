@@ -49,7 +49,7 @@ The `bug-finder` skill runs alongside in **anchored mode**: it audits against th
 - **Risky changes carry a tech brief:** persistence/state, concurrency, networking, platform SDKs, security or a new dependency → a plain-language `walkthrough.md` and a 3-question teach-back before your sign-off.
 - **Deviations block closure:** waivers, open decisions and conflicts stay pending until the human resolves them, and every resolution lands in `DECISIONS.md`.
 - **The BOARD shows what awaits you.** Specs own behavior, `ARCHITECTURE.dsl` owns structure, `DECISIONS.md` owns the why.
-- **Heavy work runs in parallel, and the implementation runs fresh.** Six of the nine commands dispatch scoped child sessions: `/spec-add` and `/spec-triage` survey with `spec-recon` while you are still answering questions, `/spec-explain` traces with `spec-explainer`, `/spec-apply` hands the coding to a `spec-implementer` child with a precise brief (allowed files, goal per requirement) — a *fresh context by construction*, which is what the skill already asked for — and dispatches the test suite and the tech brief in parallel, and `/spec-verify` dispatches one read-only audit child per change. See [Speed](docs/speed.md).
+- **Heavy work runs in parallel, and the implementation runs fresh.** Six of the nine commands dispatch scoped child sessions: `/spec-add` and `/spec-triage` survey with `spec-recon` while you are still answering questions, `/spec-explain` traces with `spec-explainer`, `/spec-apply` hands the coding to a `spec-implementer` child with a precise brief (allowed files, goal per requirement) — a *fresh context by construction*, which is what the skill already asked for — and dispatches the test suite and the tech brief in parallel, and `/spec-verify` dispatches one read-only audit child per change — a *fresh context by construction*, which is what the skill already asked for.
 
 Details, diagrams and edge cases: [docs/](docs/README.md).
 
@@ -58,7 +58,7 @@ Details, diagrams and edge cases: [docs/](docs/README.md).
 ```
 SKILL.md            the canonical spec (router: glossary, operations, rules)
 references/         INIT · scripts, flags & gate policy · implementation status & limits
-docs/               concepts · lifecycle · gates · workflows · speed · FAQ · evidence · security
+docs/               concepts · lifecycle · gates · workflows · FAQ · evidence · security
 assets/commands/    the nine commands copied into a repo by the INIT
 assets/agents/      the eight subagents (spec-implementer · spec-gate · spec-auditor · spec-walkthrough · spec-recon · spec-explainer · spec-deps-graph · diagram-sync)
 assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
@@ -68,7 +68,7 @@ quality/            the conformance suite and its recorded results
 
 ## Status
 
-**v1.5 prototype** (branch `experiment/fast-path`) — speeds up the slow commands: add/triage/apply/verify/explain dispatch their independent work (survey, implementation, test suite, per-change audit, tech brief, trace) to scoped child sessions and join the results, without relaxing the gate, the evidence or any human-only record ([Speed](docs/speed.md)). **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
+**v1.5 prototype** (branch `experiment/fast-path`) — speeds up the slow commands: add/triage/apply/verify/explain dispatch their independent work (survey, implementation, test suite, per-change audit, tech brief, trace) to scoped child sessions and join the results, without relaxing the gate, the evidence or any human-only record. **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
 
 ## Tests
 

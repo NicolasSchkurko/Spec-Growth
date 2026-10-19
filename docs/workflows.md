@@ -14,7 +14,7 @@ Recipes for the situations that come up most. All of them assume the repository 
 | `/spec-resolve` | — (one `question` round replaces N turns) | every decision |
 | `/spec-gate` · `/spec-deps-graph` · `/diagram-sync` | the whole command is the child | — |
 
-The two rules: **independent work goes out in one batch**, and **what a child returns is a claim** until the parent checks it (the diff against the brief, the `file:line`s against the code). Nothing human-only is delegated. Details, costs, the published caveats and how to measure it: [Speed](../docs/speed.md).
+The two rules: **independent work goes out in one batch**, and **what a child returns is a claim** until the parent checks it (the diff against the brief, the `file:line`s against the code). Nothing human-only is delegated.
 
 `/spec-apply` and `/spec-verify` in detail:
 
@@ -48,7 +48,7 @@ sequenceDiagram
 4. The parent **vets** everything that came back: a changed file outside the brief, every `file:line` in a finding or in the walkthrough is checked against the real code before you see it. A child that fails or times out is re-run, or the parent does the work and says so.
 5. Nothing human-only is delegated: approvals, waivers, decisions, conflicts and the comprehension sign-off are the session's and yours. **One implementation worker per change** — the parent or the child, never both.
 
-What is relaxed is only the waiting, never a check. Cost, limits and how to measure it: [Speed](../docs/speed.md).
+What is relaxed is only the waiting, never a check.
 
 ## 1. A new feature
 

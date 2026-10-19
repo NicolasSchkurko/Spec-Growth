@@ -17,7 +17,7 @@ LLM semantic analysis was not used in this environment: the available provider (
 
 | Finding | Where | Triage |
 |---|---|---|
-| LP3 MCP least privilege | `SKILL.md` | By design: OpenCode V2 scopes tools in agent config (`agents.<id>.permissions`), not in `SKILL.md`. Declared intent now lives in the *Safety & scope* section. |
+| LP3 MCP least privilege | `SKILL.md` | **Implementation scope: weaker than it looks.** The skill declares intent, but this OpenCode build does **not enforce** agent `permissions` (measured — `quality/dispatch-smoke.mjs` had a denied edit write a file; see `references/status.md`). The compensating control is that every command that dispatches a read-only child checks `git status` / `git diff` when it returns. **Re-scan pending after v1.5** (agents + dispatch changed the surface this scan covered). |
 | EA2 excessive agency | `spec-gate.md`, `gate-check.mjs` | False positive (text heuristic): the flagged lines are error messages that **require** human approval for protected files. |
 | RP1 MCP rug pull | `references/init.md` | Accepted/documented: INIT now requires pinning a concrete reviewed semver and never `@latest`; the scanner still flags the `<placeholder>` because it only recognizes numeric versions. Re-check when the real version is chosen. |
 | EA3 scope creep | `THIRD-PARTY-NOTICES.md` | False positive: MIT license boilerplate ("MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE"). |
