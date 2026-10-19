@@ -1,6 +1,6 @@
 ---
 name: Spec Growth
-description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, fast-path small changes, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-quick · spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
+description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
 ---
 
 # Spec Growth
@@ -46,13 +46,15 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 
 | Command | Where | Model |
 |---|---|---|
-| `/spec-gate` | background child (`subagent: true`) | `opencode-go/space-bunny` |
+| `/spec-gate` | background child (agent `spec-gate`) | `opencode-go/space-bunny` |
 | `/spec-deps-graph` | background child (`subagent: true`) | `opencode/space-bunny-free` |
-| `/diagram-sync` | background child (`subagent: true`) | `opencode-go/space-bunny` |
-| `/spec-resolve` · `/spec-verify` · `/spec-explain` · `/spec-quick` | session (interactive) | inherited |
+| `/diagram-sync` | background child (agent `diagram-sync`) | `opencode-go/space-bunny` |
+| `/spec-resolve` · `/spec-verify` · `/spec-explain` | session (interactive) | inherited |
 | `/spec-add` · `/spec-triage` · `/spec-apply` | session (core work) | inherited |
 
-**How to change a model**: edit the YAML frontmatter of the command file — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`) — fields `model: provider/model#variant` and `subagent: true|false` (or route via another agent with `agent: <id>`). Commands reload automatically; no restart. Removing `model` falls back to the agent's model, then to the session model. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
+**Dispatched children (v1.5)**: `/spec-apply` and `/spec-verify` stay in the session (they own the approvals, the brief and the final judgment) and launch **scoped children**: `spec-implementer` (writes the code + tests, only inside the files the brief names; `openspec/**` denied; **inherits the session model** — implementation is the core work), `spec-gate` (the suite), `spec-auditor` (one per active change, read-only), `spec-walkthrough` (writes only inside `openspec/changes/`). Each child's model and permissions live in `.opencode/agents/<id>.md`: `model: provider/model#variant`, `permissions: [{action, resource, effect}]`. **`spec-implementer` deliberately declares no `model:`**, so it runs on the **parent session's own model** (the same one the human chose for the work) — pinning it would break that inheritance. The mechanical children (`spec-gate`, `spec-auditor`, `spec-walkthrough`, `diagram-sync`) are pinned to the cheap `space-bunny`. The auditor denies `edit`/`shell` on purpose — a child detects, it does not decide. **One implementation worker per change: the parent or the child, never both.**
+
+**How to change a model**: edit the YAML frontmatter of the file that owns it — a command in `.opencode/commands/` (`model:` there overrides everything) or an agent in `.opencode/agents/` (`model: provider/model#variant`; removing it falls back to the session model). `subagent: true` on a command forces a background child; `agent: <id>` routes it through that agent. Commands and agents reload automatically; no restart. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
 
 ## Safety & scope
 
@@ -65,11 +67,10 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 
 | Command | Role |
 |---|---|
-| `/spec-quick` | **Fast path** for a low-risk change: `risk-router` gates it (FULL → `/spec-add`), then ONE interaction and add + accept + apply + gate in the same turn. Same gate, same evidence, same human-only records |
 | `/spec-add` | Create a change (proposal + delta spec + metadata + `[REQ-…]` IDs), with **technical alternatives** (reuse / up to 3 options), **expected outcome** (feature/architecture), protected-zone warnings and decision requests. Does NOT write code |
 | `/spec-triage` | Bug/discrepancy → decide the side (human) → ADR + `kind: fix` change with a regression test |
-| `/spec-apply` | Apply ONE change on its branch with **clean context**: tests + gate (`--run-tests`) + `@cita` citations; `verified` only with green evidence. Protected zone → asks for your explicit approval |
-| `/spec-verify` | Mechanical gate + advisory semantic pass (drift, opacity) + **comprehension teach-back** for tech briefs: asks the 3 questions, validates your answers against the code, records the sign-off. Proposes **waivers** / **decision requests** / **conflicts** — never silence |
+| `/spec-apply` | Apply ONE change on its branch: the **implementation runs in a fresh `spec-implementer` child** from a precise brief (allowed files + goal per requirement), then tests + gate (`--run-tests`); `verified` only with green evidence. The gate and the tech brief run as parallel children. Risky changes (architecture, protected zone) are implemented in-session. Protected zone → asks for your explicit approval |
+| `/spec-verify` | Gate + **one read-only audit child per active change** (parallel) + **comprehension teach-back** for tech briefs: asks the 3 questions together, validates your answers against the code, records the sign-off. Proposes **waivers** / **decision requests** / **conflicts** — never silence |
 | `/spec-explain` | Explain existing behavior: traces the real path (`file:line`), plain-language mechanism + Mermaid, anchors a mechanism note (`docs/mechanisms/`), proposes a `kind: refactor` when the code is opaque. Does not edit code |
 | `/spec-gate` | Measure and record: `gate-check` (static by default; `--run-tests` for CI/verified) + board. Fixes nothing |
 | `/spec-deps-graph` | What is **not archived**, at a glance: declared-deps Mermaid graph + one line per living capability and change in flight. Read-only |
@@ -78,7 +79,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 
 **Resolving pendings**: `/spec-resolve` (or ask the agent conversationally) — the decision is always yours and no resolution counts without an ADR in `DECISIONS.md`. Comprehension sign-offs are not resolved there: they happen in `/spec-verify`, as the walkthrough teach-back.
 
-**Speed**: `/spec-quick` collapses the small-change loop (add → accept → apply → gate) into **one interaction and one turn**, and asks a tech brief's 3 questions in one message. `scripts/gates/risk-router.mjs` decides mechanically whether a change may take it (architecture, protected zones, tech briefs, new capabilities, decisions and conflicts all send it to the full flow); the gate, the green evidence and every human-only record are identical. Diagnosis, guardrail and the measurement protocol: [docs/speed.md](docs/speed.md).
+**Speed — apply and verify are dispatched**: `/spec-apply` and `/spec-verify` keep the judgment in the session and send the independent, read-only work to scoped child sessions, launched **in one batch**: `spec-gate` (the suite, background), `spec-auditor` (one per active change, read-only, capped at 6), `spec-walkthrough` (writes only inside `openspec/changes/`). The children never approve, sign or decide; the parent **vets every finding and every `file:line` before reporting it**. The gate, the green evidence and all human-only records are untouched. Design, costs and the measurement protocol: [docs/speed.md](docs/speed.md).
 
 **Approvals — how they happen**: the human authorizes with an **explicit sentence** in the conversation; the agent **writes the record**; the gate **verifies the record** (never the other way round, never by silence). You do not need to edit YAML by hand: ask in any session or run `/spec-resolve`, which presents pendings one by one.
 
@@ -106,7 +107,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 - **Protected**: never set `human_approved: true` on your own; the human indicates it explicitly.
 - **Capabilities**: declare `provides: [cap:x]` in the owning spec; do not create duplicates.
 - **Reuse first** (code minimalism): the ladder lives in `AGENTS.md`. Orient before exploring: the **native LSP tool** for symbols (`lsp: true`; grep for literals), `codebase-memory` only in large repos, and `node scripts/gates/build-map.mjs` as the zero-dependency fallback.
-- **Fast path**: `/spec-quick` is allowed **only** for what `risk-router.mjs` calls `FAST`; it batches the human's questions into one interaction but never self-approves, never skips the gate, and hands anything risky back to `/spec-add`.
+- **Dispatch, do not trust**: `/spec-apply` and `/spec-verify` launch scoped children (`spec-implementer`, `spec-gate`, `spec-auditor`, `spec-walkthrough`) — in one batch when independent, never in series. Children never approve, sign or decide; **one implementation worker per change** (you or the child, never both); the parent **verifies what a child wrote or changed** (`git diff --stat` vs the brief, `file:line`, evidence) before reporting it, and does the work itself if a child fails.
 - **Tech brief**: when a change touches persistence/state, concurrency, networking, platform SDKs, security or adds a dependency, declare `tech_brief: true`; write `walkthrough.md` in the plainest language and generate 3 change-specific questions at apply. **Never fake the human's answers** — the sign-off is theirs, recorded only after their explicit confirmation.
 - The agent proposes and executes; **the human decides**. One apply = one branch = one change.
 - **Clean context** when implementing: a fresh (or deliberately compacted) session (mixed evidence: one study with a modest result, p≈0.07 — a reasonable heuristic, not a universal law).

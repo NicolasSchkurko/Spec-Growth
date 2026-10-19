@@ -45,11 +45,14 @@ A living capability (a spec folder, `cap:<capability>`) is realized by no compon
 
 ## Day to day
 
-**A one-line fix feels heavier than just vibecoding it. Can it be faster?**
-Yes: `/spec-quick` is the low-risk fast path. It batches the whole loop (create → accept → implement → gate) into **one interaction and one turn**, instead of one turn per step, and asks a tech brief's 3 questions together. The guardrail is `risk-router.mjs`: architecture, protected zones, persistence/concurrency/network/SDK/security, a new dependency or capability, conflicts and open decisions all send the change back to the full flow (`/spec-add`). The gate, the green evidence and every human-only record are identical — the fast path removes round-trips, not checks. Details: [Speed](speed.md).
+**Why are `/spec-apply` and `/spec-verify` the slow ones — can they be faster?**
+They were slow because they did independent work **one thing after another, inside the session**: the test suite then the tech brief; and in verify, the semantic pass change by change and only then the teach-back. Now they **dispatch**: `/spec-apply` launches the suite and the walkthrough drafter together in the background; `/spec-verify` launches the gate plus **one read-only auditor per active change** (capped at 6) and does the teach-back while they run. What is not relaxed: the gate, the green evidence, the protected zones, the waivers, the decisions and the sign-offs are unchanged, no child can approve or write code, and the parent **vets every finding before you see it**. Details, costs and how to measure it: [Speed](speed.md).
+
+**Who wrote `walkthrough.md` — the agent or a child?**
+`/spec-apply` hands it to the `spec-walkthrough` child, which writes **only inside `openspec/changes/`** (the `status`/`tech_brief` keys and `walkthrough.md`) and returns what it did. The parent then **verifies every `file:line` it claims before reporting it** — a wrong brief is the parent's responsibility, not the child's. The human's answers and the `understood_by`/`understood_at` sign-off are always the parent's, in `/spec-verify`.
 
 **Why did `/spec-verify` not re-run the test suite?**
-Because the evidence was already fresh: the fingerprint of the change's `targets` + `tests` matched the recorded green run, so re-running would prove the same thing. It ran static (`--scope <id>`) and said so. If anything changed, the gate reports `STALE evidence` and the suite runs again — before `--pre-archive`, or in CI, it always runs.
+Because the evidence was already fresh: the fingerprint of the change's `targets` + `tests` matched the recorded green run, so re-running would prove the same thing. It ran static (`--scope <id>`) and said so (`reused fresh evidence: <id>`). If anything changed, the gate reports `STALE evidence` and the suite runs again — before `--pre-archive`, or in CI, it always runs.
 
 **How do I see everything that awaits me right now?**
 `BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · 🧠 comprehension sign-offs · in progress · drafts · waivers · Capabilities · Dependency graph · blocked · archive · warnings.
@@ -59,8 +62,8 @@ Run `/spec-deps-graph`: it renders the declared-deps graph and adds one plain li
 
 ## Models
 
-**Can I change which model runs `/spec-gate`, `/spec-deps-graph` or `/diagram-sync`?**
-Yes. Those run as **background subagents** (`/spec-gate` and `/diagram-sync` on a cheap model, `opencode-go/space-bunny`; `/spec-deps-graph` on a free model, `opencode/space-bunny-free`), so their work never pollutes your session. Change it in the command's frontmatter — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`): `model: provider/model#variant` and `subagent: true|false` (or `agent: <id>` to route via another agent). Commands reload automatically, no restart needed. Remove the `model` line to fall back to the agent's model, then to your session's model. The interactive commands (`add`, `triage`, `apply`, `verify`, `explain`, `resolve`) always inherit your session model — the assumption is that it is your most capable one. Full table: `SKILL.md` → *Model routing*.
+**Can I change which model runs the background work?**
+Yes. `/spec-gate` and `/diagram-sync` run as **background child sessions** (a cheap model, `opencode-go/space-bunny`), `/spec-deps-graph` on a free model (`opencode/space-bunny-free`), and `/spec-apply` + `/spec-verify` dispatch their long work to the `spec-gate`, `spec-auditor` and `spec-walkthrough` children (also `space-bunny`). The model and the permissions live in the **agent file**: `.opencode/agents/spec-auditor.md`, `spec-gate.md`, `spec-walkthrough.md`, `spec-implementer.md`, `diagram-sync.md` — `model: provider/model#variant` plus a `permissions:` list (the auditor denies `edit`/`shell` by default). The command in `.opencode/commands/` only routes: `agent: <id>` + `subagent: true` (and a `model:` there overrides the agent's). One exception worth knowing: **`spec-implementer` declares no `model:` on purpose**, so it runs on **the same model as your session** — the code is the core work and you chose that model for it; do not pin it. Delete a `model` line on any other agent to make it inherit too. Commands and agents reload automatically, no restart. The interactive part of every command (`add`, `triage`, `apply`, `verify`, `explain`, `resolve`) always stays on your session model — the assumption is that it is your most capable one. Full table: `SKILL.md` → *Model routing*.
 
 ## About
 

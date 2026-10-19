@@ -2,31 +2,39 @@
 
 Recipes for the situations that come up most. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
 
-## 0. A small, low-risk change (the fast path)
+## 0. What runs in the background (apply and verify)
 
 ```mermaid
 sequenceDiagram
     participant Dev as You
-    participant Ag as Agent
-    participant R as risk-router
-    participant G as gate
-    Dev->>Ag: /spec-quick "recortar el título a 80 chars"
-    Ag->>R: risk-router --kind fix --targets src/notes.js
-    R-->>Ag: FAST
-    Ag->>Dev: one message: clarify + alternatives + "approve and I'll carry it to green"
-    Dev->>Ag: "dale, aplicalo"
-    Ag->>G: add + accept + branch + code + tests + gate-check --run-tests
-    G-->>Ag: GREEN (evidence recorded) → verified
-    Dev->>Ag: merge → /spec-gate --pre-archive → archive
+    participant Ag as Session
+    participant I as spec-implementer child
+    participant G as spec-gate child
+    participant W as spec-walkthrough child
+    participant A as spec-auditor children
+    Dev->>Ag: /spec-apply offline-notes
+    Ag->>I: dispatch: brief (goal per requirement + allowed files)
+    I-->>Ag: code + tests (report)
+    Ag->>Ag: check the diff against the brief
+    Ag->>G: dispatch: gate-check --run-tests (background)
+    Ag->>W: dispatch: write walkthrough.md (background)
+    G-->>Ag: GATE GREEN (evidence recorded)
+    W-->>Ag: walkthrough written (+ flags)
+    Ag->>Ag: verify every file:line the child claimed
+    Dev->>Ag: /spec-verify → comprehension sign-off
+    Ag->>G: dispatch: gate (reuses fresh evidence)
+    Ag->>A: dispatch: one auditor per active change (background)
+    A-->>Ag: findings (file:line)
+    Ag->>Dev: vetted findings + teach-back (3 questions together)
 ```
 
-1. `/spec-quick "<idea>"` — the agent routes the change first: `node scripts/gates/risk-router.mjs` says `FAST` or `FULL`.
-2. `FULL` (architecture, protected zone, persistence/concurrency/network/SDK/security, new dependency, new capability, conflict, decision, too many roots) → it stops and hands off to `/spec-add`. Nothing is lost.
-3. `FAST` → **one message** with the clarifying questions, the alternatives table and the approval request. Your single explicit *yes* authorizes create + accept + apply.
-4. On your yes it runs the whole loop in that same turn and reaches `verified` with green evidence. A tech brief discovered mid-apply asks its 3 questions **together**, once.
-5. Merge, then `--pre-archive <id>` → OK → `openspec archive <id>`. Unchanged.
+1. `/spec-apply` **orients, then hands the implementation** to the `spec-implementer` child with a precise brief: the goal per requirement, the allowed files (`targets` + `tests`) and the reuse-first ladder. The child is a fresh context by construction. Risky changes (architecture, protected zone, anything that would need a question mid-way) are implemented in the session instead — a child has nobody to ask.
+2. The parent **checks the diff against the brief** and, as soon as the code and tests hold, launches the gate and the tech-brief drafter **in one batch**.
+3. `/spec-verify` launches the gate and **one read-only auditor per active change** (capped at 6; beyond that, group by capability) and runs the teach-back while they work.
+4. The parent **vets** everything that came back: a changed file outside the brief, every `file:line` in a finding or in the walkthrough is checked against the real code before you see it. A child that fails or times out is re-run, or the parent does the work and says so.
+5. Nothing human-only is delegated: approvals, waivers, decisions, conflicts and the comprehension sign-off are the session's and yours. **One implementation worker per change** — the parent or the child, never both.
 
-Nothing is relaxed: the gate, the evidence and every human-only record (protected zones, waivers, decisions, conflicts, sign-offs) behave exactly as below. Details and how to measure it: [Speed](../docs/speed.md).
+What is relaxed is only the waiting, never a check. Cost, limits and how to measure it: [Speed](../docs/speed.md).
 
 ## 1. A new feature
 

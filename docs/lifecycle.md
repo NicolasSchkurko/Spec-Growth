@@ -23,7 +23,7 @@ stateDiagram-v2
 
 There is no workflow engine: the transitions are what you do next, and the gate only validates the **invariants of the recorded state** — a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
 
-The **fast path** (`/spec-quick`) does not add or skip a state: for a low-risk change it performs `draft → accepted → applying → verified` inside one turn, on the human's single explicit approval, and hands anything risky back to the full flow. Same states, same records, fewer round-trips ([Speed](speed.md)).
+The **child sessions** `/spec-apply` and `/spec-verify` dispatch (the gate, the per-change audit, the tech brief) never change a state and never record anything human-only: they read, and only `spec-walkthrough` writes inside the change folder. States, records and approvals are exactly as below ([Speed](speed.md)).
 
 ## The approval circuit
 

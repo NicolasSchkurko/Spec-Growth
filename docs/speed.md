@@ -1,82 +1,75 @@
-# Speed: the fast path
+# Speed: apply and verify
 
-Spec Growth is slower than vibecoding on purpose — the ceremony buys recorded evidence and a gate that no agent can forget. But most of the slowdown was **round-trips**, not checks: the same change paid for the same ceremony twice, and every human decision was its own turn.
-
-This page is the diagnosis and the answer: `/spec-quick`, the guardrail that decides when it applies, and how to measure whether it actually helped.
+`/spec-add`, the approvals and the archive are fine — this page is about the two commands that were slow: **`/spec-apply`** and **`/spec-verify`**. Both were doing long, independent work **serially inside the session**, and paying context for it. The answer is not to skip checks: it is to run the independent work in **parallel child sessions**.
 
 ## Where the time went
 
-For a small change (one file, one test) the old flow was:
+**`/spec-apply`**, after the code was written, did this in one thread:
 
-| # | Step | Round-trip with the human | Suite run |
+| Work | Depends on | Waits for |
+|---|---|---|
+| `gate-check --run-tests` (the whole suite) | the finished code | — |
+| `walkthrough.md` (read the diff, read the files, explain the mechanism) | the finished code | — |
+| the report | both | both |
+
+The suite and the walkthrough have **nothing to do with each other**, and the agent sat idle through both. The walkthrough is also the one step that drags a lot of files into the session's context — exactly the context the rest of the apply needs.
+
+**`/spec-verify`** was worse: the semantic pass (read every delta spec, read the code of every target, look for four classes of drift) ran **change by change, in the session, in series**, on top of the gate, and only then came the teach-back.
+
+## The design
+
+Both commands now **dispatch and join**. They stay in the session — they own the code, the judgment and the human's answers — and the long, independent, read-only work goes to child sessions that return a compact result and never pollute the parent's context.
+
+Two things make this safe and honest:
+
+- **Children are scoped, not trusted.** The auditor is **read-only by permission** (`edit`, `shell` and `subagent` denied): "the machine detects, the human decides". The implementer may write code, but never `openspec/**`, `.git/**` or `.env*` — and only inside the files the brief names. The walkthrough drafter writes **only inside `openspec/changes/`**, with `edit` and never `write`, and only the `status`/`tech_brief` keys plus its own file.
+- **The parent is accountable.** The implementer's diff is checked against the brief before anything else; the walkthrough is verified claim by claim (`file:line`) before the parent reports it; the findings the auditor returns are vetted before being relayed. A child that invents evidence, widens the blast radius or forgets a test is a finding about the child.
+
+### `/spec-apply`
+
+1. **Orient**, then hand the implementation to **`spec-implementer`** (foreground) with a precise brief: the goal per requirement, the **allowed files** (`targets` + `tests`), and the constraints. The child is a *fresh context by construction* — which is exactly what the skill already asked for ("clean context when implementing"), now enforced instead of requested. Risky changes (`kind: architecture`, protected zones, anything that would need a question mid-way) are implemented **in the session**: a child has nobody to ask.
+2. **One implementation worker per change** — parent or child, never both. The parent then checks the diff against the brief (`git diff --stat`: nothing outside `targets`/`tests`).
+3. As soon as the code and tests are verified, launch **in one batch**: the gate (`spec-gate`, background) and, if it is a tech brief, the drafter (`spec-walkthrough`, background) — it sets `tech_brief: true`/`status: applying` and writes `walkthrough.md`.
+4. Board regeneration while they run.
+5. **Join**: read the implementer's report against the diff (scope creep, a missing test, an unlabelled shortcut → send it back or finish it), then the gate verbatim (fix red → repeat), then verify the walkthrough against the real code.
+
+The trade is explicit: the parent stops writing code and becomes the **orchestrator and the verifier**. It keeps the approvals, the brief and the final judgment, and its context never holds the implementation's file reads or test output.
+
+### `/spec-verify`
+
+1. Launch **in one batch**: the gate (background) and **one `spec-auditor` child per active change** (background, cap 6; beyond that, group by capability). A large or risky change is audited in-session, or by editing the agent's `model:`.
+2. **While they run**, do the human part: the comprehension teach-back, with the 3 questions asked **together in one message** (still free recall, still validated against the real code — it was three sequential messages before).
+3. **Join and vet**: check each finding's `file:line`, drop what does not hold, then persist `findings.md`, propose waivers/decisions/conflicts, regenerate the board.
+
+### What runs where
+
+| Agent | Mode | Model | Writes |
 |---|---|---|---|
-| 1 | `/spec-add` → ends `draft` | ✋ approve | — |
-| 2 | `/spec-apply` → preconditions, implement, gate | ✋ protected zone (if any) | ✅ `--run-tests` |
-| 3 | `/spec-verify` → gate + teach-back | ✋✋✋ 3 questions, **one at a time** | ✅ `--run-tests` (again) |
-| 4 | push / merge | ✋ | — |
-| 5 | `gate-check --pre-archive` → `openspec archive` | ✋ | — |
+| `spec-implementer` | subagent | **the parent session's model** (no `model:` declared — the core work runs on the same model you chose) | code + tests, only inside the brief's files; `openspec/**` denied |
+| `spec-gate` | subagent | `opencode-go/space-bunny` | `BOARD.md`/`board.json` (via the script) |
+| `spec-auditor` | subagent, read-only | `opencode-go/space-bunny` | nothing |
+| `spec-walkthrough` | subagent, confined | `opencode-go/space-bunny` | `openspec/changes/**` only |
+| `diagram-sync` | subagent, read-only | `opencode-go/space-bunny` | nothing |
 
-Seven-ish human turns to land a one-line change, plus the whole test suite twice. Three causes:
-
-1. **Ceremony duplicated as turns.** `/spec-add` builds the change and stops for approval; `/spec-apply` is a second command that re-reads the state and asks again. The human's one decision costs two turns of setup.
-2. **The teach-back was serialized.** Three comprehension questions, one message each, for tech briefs.
-3. **The suite ran twice.** `/spec-apply` records green, then `/spec-verify` runs `--run-tests` again even when the fingerprint proves nothing changed.
-
-None of that was a *check*. The gate, the `[@test]` rules, the citations and the human-only records were never the slow part.
-
-## The fast path
-
-**`/spec-quick`** runs the same system in fewer turns:
-
-1. **Route first.** `node scripts/gates/risk-router.mjs` decides `FAST` or `FULL` from `kind`, `targets` and the protected zones. `FULL` → hand off to `/spec-add`, unchanged.
-2. **One interaction.** Clarifying questions, alternatives and the approval request go out **in a single message**, with the approval phrased to cover create + accept + apply.
-3. **One turn.** On the explicit yes: create the change, record the acceptance, branch, implement, test, `gate-check --run-tests`, board — in the same turn.
-4. **Teach-back in one message.** If a tech brief appears, the 3 questions go together (still free recall, still validated against the code, still the human's words).
-
-For a small change that is **1 human turn instead of ~7**.
-
-## The guardrail: `risk-router.mjs`
-
-The fast path is a *low-risk* path, not a shortcut around the gate. The router is mechanical and read-only; `FULL` on any of:
-
-- `kind: architecture`
-- a target crossing `protected:` in `openspec/config.yaml`
-- `--tech` — persistence/state, concurrency, networking, platform SDKs, security
-- `--dep` — a new dependency
-- `--new-cap` — creates a capability
-- `--conflict` / `--decision` — contradicts a decision, or needs one
-- more than `SPEC_GROWTH_QUICK_MAX_ROOTS` distinct roots (default 5)
-
-```bash
-node scripts/gates/risk-router.mjs --kind fix --targets "src/notes.js"     # exit 0  → FAST
-node scripts/gates/risk-router.mjs --kind feature --targets "src/sync.js" --tech  # exit 10 → FULL
-```
-
-Exit `0` = FAST, `10` = FULL, `1` = usage error. `--json` for machines; `--id <change>` re-routes an existing change (reading `kind`, `targets`, `tech_brief`, `conflicts`, `open_decisions`).
+`/spec-gate` and `/diagram-sync` are now thin commands (`agent: <id>`, `subagent: true`) — one definition, in `.opencode/agents/`, used both by a human typing the command and by a parent dispatching work.
 
 ## What is NOT relaxed
 
-Nothing that the machine or the human owns:
+- **No self-approval.** Protected zones, waivers, decisions, conflicts and comprehension sign-offs remain human-only; no child can record one.
+- **The gate.** `verified` still needs green `--run-tests` evidence; the fingerprint still stales it.
+- **Evidence freshness.** Skipping a redundant suite run happens only when the fingerprint proves the recorded green run still covers the code.
+- **One implementation worker per change.** The parent or the `spec-implementer` child, never both and never two children: parallel writers on one branch lose work. Only the independent read-only work is parallel.
 
-- **No self-approval.** No explicit sentence from the human → no change folder, no code. The router never creates anything.
-- **The gate.** `--run-tests` green evidence is still required for `verified`; the fingerprint still stales it.
-- **Protected zones, waivers, decisions, conflicts, sign-offs.** Human-only, exactly as in the full flow — the router routes them away from the fast path.
-- **`--pre-archive`.** Archiving still needs the merge verified and every blocker closed.
+## How to measure it
 
-## Reusing fresh evidence (no second suite run)
+Same bar as everywhere in this repo: **equal or better, or it is a regression.**
 
-`/spec-verify` on a change whose green evidence is **fresh** (the fingerprint of `targets` + `tests` matches the recorded run) may run the gate **static** (`--scope <id>`) instead of `--run-tests`, and say so. The machine keeps the honesty: if anything changed, the gate itself reports `STALE evidence`, so the shortcut cannot lie. Re-run the suite when the fingerprint moved, before archiving, or in CI.
+**Cheap, do it first.** For one change with a tech brief, time the apply with the gate and the walkthrough in series versus dispatched. The wall clock should drop by roughly the smaller of the two (they overlap), and — the part that matters for quality — the parent's context should grow much less, because the suite output and the walkthrough's file reads no longer land in it. For verify, do the same with 2–3 active changes: serial audit versus fan-out.
 
-## How to measure it (protocol)
+**Real, before merging.** Re-run the frozen suite (`quality/conformance/`). The defaults are what it guards, and the dispatch must not change them: `t1-add` and `t2-quickfix` must still stop at `draft` and still ask before coding; `t3-apply` must still update `gitref` and only reach `verified` with green evidence; `t4-archive` must still refuse to archive on a missing sign-off. A task worth adding is an apply/verify one that asserts the **parent did not trust a child**: a walkthrough with a wrong `file:line` must be caught, not reported.
 
-The bar is the same as everywhere in this repo: **equal or better, or it is a regression.**
-
-**Cheap, do it first — turn count.** Take 3 real small changes and count human turns and suite runs. Old flow ≥ 5 turns / 2 suite runs; fast path should be 1–2 turns / 1 suite run.
-
-**Real, before merging — conformance.** The frozen suite (`quality/conformance/`) guards the *defaults*: `t1-add` and `t2-quickfix` assert that a plain request still stops at `draft` and still asks before coding. `/spec-quick` is opt-in, so those must stay green. A new anchor task (`t6-quick`) should cover the fast path itself: given "arreglá esto, es una línea" with explicit "dale, aplicalo", the agent routes, approves once, implements, and reaches a gate with evidence — without self-approving anything. Add it to `tasks.mjs` and re-run the suite (the template needs `.opencode/commands/spec-quick.md` for the fixture).
-
-**Wall clock.** `durationMs` per run is already recorded in each `result.json`; compare medians for the fast path vs the full flow on the same prompt.
+**Known cost.** Children are extra model calls: the wall clock improves, the token bill may not. The audit runs in a fresh context that reads the delta spec and the target code again — that is the price of keeping those reads out of the parent. Keep fan-out capped, and prefer `--scope <id>` over a full re-run when the evidence is fresh.
 
 ## Status
 
-Prototype (branch `experiment/fast-path`). `/spec-quick` and `risk-router.mjs` are new and additive; the existing commands, the gate and the frozen suite are untouched.
+Prototype (branch `experiment/fast-path`). The two commands, the five agents and the INIT wiring are new; the gate, the scripts and the frozen suite are untouched. Not yet measured against the suite.

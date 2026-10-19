@@ -9,8 +9,9 @@ openspec/                  # specs/ · changes/(+archive) · schemas/spec-anchor
 BOARD.md                   # generated
 DECISIONS.md               # append-only (ADR-lite)
 ARCHITECTURE.dsl           # C4 (Structurizr), once diagram-sync is used
-scripts/gates/             # lib.mjs · gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · risk-router.mjs
-.opencode/commands/        # spec-quick · spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync
+scripts/gates/             # lib.mjs · gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs
+.opencode/commands/        # spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync
+.opencode/agents/          # spec-implementer · spec-gate · spec-auditor · spec-walkthrough · diagram-sync
 docs/mechanisms/           # optional mechanism notes (from /spec-explain)
 AGENTS.md                  # constitution (Spec Growth section)
 ```
@@ -31,7 +32,7 @@ AGENTS.md                  # constitution (Spec Growth section)
    - `assets/scripts/*` → `scripts/gates/`
 6. **.gitignore**: merge `assets/scaffold/gitignore` into `.gitignore` (ignores the **generated** files: `BOARD.md`, `openspec/board.json`, `openspec/evidence.json`).
 7. **Pre-commit hook (recommended)**: copy `assets/scaffold/hooks/pre-commit` to `.git/hooks/pre-commit` (executable). If the repo uses Husky (`core.hooksPath`), copy it to `.husky/pre-commit`.
-8. **Commands**: copy `assets/commands/*.md` → `.opencode/commands/` (if they exist, ask before overwriting).
+8. **Commands and agents**: copy `assets/commands/*.md` → `.opencode/commands/` and `assets/agents/*.md` → `.opencode/agents/` (if they exist, ask before overwriting). The agents are not optional: `/spec-gate` and `/diagram-sync` route to them by id (`agent: spec-gate`, `agent: diagram-sync`), and `/spec-apply` + `/spec-verify` dispatch `spec-gate`, `spec-auditor` and `spec-walkthrough` as background children. A repo that ran an older INIT must copy `assets/agents/*` before using the new commands.
 9. **Board**: `node scripts/gates/build-board.mjs`.
 10. **Final report**: what was created, what to restart, and how to continue: `/spec-add <idea>`.
 
