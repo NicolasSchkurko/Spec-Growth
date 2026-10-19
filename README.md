@@ -66,7 +66,7 @@ quality/            the conformance suite and its recorded results
 
 ## Status
 
-**v1.4** — adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
+**v1.4** — adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
 
 ## License
 

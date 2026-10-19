@@ -102,3 +102,13 @@ Same flow as a feature, with `kind: refactor`. The contract does not change, so 
 1. `/spec-deps-graph` — a read-only pass over everything that is **not archived**: the declared-deps graph (Mermaid) plus one plain line on what each living spec and each change in flight does.
 2. The script behind it (`node scripts/gates/build-graph.mjs`) is deterministic; the one-line descriptions are the only model work, and they run on a **free model** in a background subagent — no session context spent.
 3. Use it before planning work ("what already exists? what is sequenced after what?") or when the BOARD feels too heavy. It changes nothing: a behavior no spec describes gets flagged for `/spec-add` or `/spec-triage`, not fixed here.
+
+## 10. Splitting a capability (moving requirements)
+
+A capability is named for a cohesive behavior, and its name should describe what it owns. When it stops doing so — one capability holding two different facts — you reorganize **through a change**, never by editing `openspec/specs/` by hand.
+
+1. `/spec-add "<what moves and why>"` with `kind: refactor`: the contract does not change, only its owner. The green suite is the proof (a `refactor` carries its regression `[@test]`).
+2. In the delta for the **new** capability, the first section is `## Purpose` — one or two sentences on what the capability is for. Archive copies it into the living spec; without it the new spec is left with a `TBD … Update Purpose after archive` placeholder.
+3. Every requirement that leaves the **old** capability is listed under `## REMOVED Requirements` with a **Reason** (why it does not belong there) and a **Migration** (where it went). Its text and its `[@test]` lines move unchanged — the split is a move, not a rewrite.
+4. The `cap:<capability>` tags in `ARCHITECTURE.dsl` follow the move (the gate checks both ways). A freshly created capability is untagged until `/diagram-sync` tags the component that realizes it — a warning, never a silent pass.
+5. If the reorganization contradicts something already decided or written (an ADR, a living requirement), it enters as a ⚔ **conflict**: pending until you approve the reversal, which is recorded as an ADR in `DECISIONS.md`.
