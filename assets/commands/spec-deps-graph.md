@@ -4,4 +4,4 @@ agent: spec-deps-graph
 subagent: true
 ---
 
-Show the dependency graph and the one-line inventory. $ARGUMENTS
+Show the dependency graph and the one-line inventory. If `scripts/gates/build-graph.mjs` is missing, say so and stop — do not invent anything. $ARGUMENTS

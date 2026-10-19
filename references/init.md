@@ -34,6 +34,8 @@ AGENTS.md                  # constitution (Spec Growth section)
 6. **.gitignore**: merge `assets/scaffold/gitignore` into `.gitignore` (ignores the **generated** files: `BOARD.md`, `openspec/board.json`, `openspec/evidence.json`).
 7. **Pre-commit hook (recommended)**: copy `assets/scaffold/hooks/pre-commit` to `.git/hooks/pre-commit` (executable). If the repo uses Husky (`core.hooksPath`), copy it to `.husky/pre-commit`.
 8. **Commands and agents**: copy `assets/commands/*.md` → `.opencode/commands/` and `assets/agents/*.md` → `.opencode/agents/` (if they exist, ask before overwriting). The agents are not optional: `/spec-gate` and `/diagram-sync` route to them by id (`agent: spec-gate`, `agent: diagram-sync`), and `/spec-apply` + `/spec-verify` dispatch `spec-gate`, `spec-auditor` and `spec-walkthrough` as background children. A repo that ran an older INIT must copy `assets/agents/*` before using the new commands.
+
+   **Refresh `scripts/gates/` on every branch, not once per repo.** The v1.5 commands assume the v1.5 scripts (`build-graph.mjs`, and `lib.dependencyGraph` inside `lib.mjs`). A branch created before the update keeps the old five, so `/spec-deps-graph` finds no script; the agent must then *say so and stop*, and the first thing to check is the INIT vintage. The same applies to `gate-check.mjs`: stale scripts mean stale rules.
 9. **Board**: `node scripts/gates/build-board.mjs`.
 10. **Final report**: what was created, what to restart, and how to continue: `/spec-add <idea>`.
 

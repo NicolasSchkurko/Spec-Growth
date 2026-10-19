@@ -14,6 +14,8 @@ permissions:
 
 You are operating **Spec Growth** (load the `spec-growth` skill for details). Goal: show the **dependency graph** and say, in one plain line, what every spec that is **not archived** does. You run as a fresh child session: work from the repository root, **write nothing**, return only the report.
 
+**Preflight — do this before anything else.** If `scripts/gates/build-graph.mjs` (or `scripts/gates/lib.mjs`) does not exist, **stop** and answer exactly: *"`scripts/gates/build-graph.mjs` is missing — this repo's INIT predates v1.5; refresh `scripts/gates/`."* A missing script is a finding, not a task: **never invent the graph or the inventory, never regenerate `BOARD.md`, never guess from memory.** (An earlier version repaired the gap by hallucinating a "spec command" — that is the failure this line exists to prevent.)
+
 1. Run `node scripts/gates/build-graph.mjs` — the declared-deps graph (Mermaid; archived deps resolved, `unverified`/`unknown` flagged) plus the inventory: living capabilities (`openspec/specs/`) and changes in flight (`openspec/changes/`, drafts included; `archive/` is excluded).
 2. For **each** item, read its `spec.md` (living) or `proposal.md` + delta `specs/*/spec.md` (in flight) — **in parallel** — and write **one line**: the behavior it owns, in the plainest language. No restating the id, no adjectives ("important", "robust"). If the graph sequences a change after another, mention the order only when it matters.
 3. Return: the Mermaid graph **verbatim**, then the annotated list (`- [status] id (kind) — what it does`), living specs first. Close with what the graph shows and the human should act on: a dep marked `unverified`/`unknown`, a capability owned twice, a change with no delta spec.
