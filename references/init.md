@@ -27,7 +27,7 @@ AGENTS.md                  # constitution (Spec Growth section)
    - **Latency (ask, do not assume)**: this workflow is turn-based with a large fixed context (the skill, `AGENTS.md`, the specs) — exactly the case OpenCode's `warming` targets: it keeps the provider-side **prompt cache** alive across your pauses (`{"warming": true}`, off by default, ~7 extra billable requests per 30-minute window). Offer it as an **opt-in**; never enable it silently, and only when your providers cache prompts. The `compaction`/`snapshots` trade-offs and the rest: `docs/speed.md` → *Runtime settings*.
 4. **Schema**: `openspec schema fork spec-driven spec-anchored` (if missing) + the patch in `assets/scaffold/schema-patch.md`; validate with `openspec schema validate spec-anchored`.
 5. **Scaffold** (copy/merge from `assets/scaffold/`):
-   - `config.yaml` → `openspec/config.yaml` (MERGE: do not overwrite existing keys or `protected:`)
+   - `config.yaml` → `openspec/config.yaml` (MERGE: do not overwrite existing keys or `protected:`) — the scaffold **quotes every `rules:` item**: an unquoted scalar containing `: ` is read by YAML as a mapping and OpenSpec then discards the whole artifact's rules in silence. Verify that creating a change reports no *"ignoring this artifact's rules"*.
    - `AGENTS.md` → append if it exists; create otherwise
    - `BOARD.md` and `DECISIONS.md` → repo root, only if missing
    - `assets/scripts/*` → `scripts/gates/`

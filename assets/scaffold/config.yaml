@@ -7,16 +7,19 @@ schema: spec-anchored
 context: |
   <!-- Fill in: project stack, conventions and how to run the tests -->
 
+# Every item is a FULLY QUOTED scalar on purpose: an unquoted item containing
+# ": " (like the tech-brief rule) is read by YAML as a mapping, and OpenSpec then
+# discards the whole artifact's rules in silence. Keep the quotes.
 rules:
   proposal:
-    - Declare kind (fix|feature|architecture|refactor), targets, tests and deps in .openspec.yaml
-    - Short: why and what. The how goes in design.md, only if kind=architecture
-    - Persistence/state, concurrency, networking, platform SDKs, security or a new dependency → tech_brief: true → walkthrough + comprehension sign-off before archiving
+    - "Declare kind (fix|feature|architecture|refactor), targets, tests and deps in .openspec.yaml"
+    - "Short: why and what. The how goes in design.md, only if kind=architecture"
+    - "Persistence/state, concurrency, networking, platform SDKs, security or a new dependency → tech_brief: true → walkthrough + comprehension sign-off before archiving"
   specs:
-    - Requirements in SHALL; concrete WHEN/THEN scenarios
-    - Every requirement carries a [@test] line with the path of the test verifying it
+    - "Requirements in SHALL; concrete WHEN/THEN scenarios"
+    - "Every requirement carries a [@test] line with the path of the test verifying it"
   tasks:
-    - Verifiable checklist; small tasks, each one completable and probable
+    - "Verifiable checklist; small tasks, each one completable and probable"
 
 # Protected zones: changes touching these globs require explicit human approval
 # (`human_approved: true` in the change, indicated by the human). They show up in BOARD.md.

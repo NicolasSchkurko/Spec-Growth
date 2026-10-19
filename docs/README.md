@@ -19,8 +19,8 @@ Canonical source of truth: [`../SKILL.md`](../SKILL.md); if a script changes, th
 | [Concepts](concepts.md) | The vocabulary: changes, evidence, tech briefs, waivers, decisions, conflicts, protected zones, capabilities |
 | [Lifecycle & approvals](lifecycle.md) | How a change moves from idea to archive — and exactly what to record for each approval |
 | [Gates](gates.md) | What the mechanical gate checks, the modes and flags, and the CI policy |
-| [Workflows](workflows.md) | Step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict, archiving, `/spec-explain`, `/spec-deps-graph` |
-| [Speed](speed.md) | Why apply/verify were slow, the parallel child sessions they dispatch, what is not relaxed, and how to measure it |
+| [Workflows](workflows.md) | Step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict, archiving, `/spec-explain`, `/spec-deps-graph`, splitting a capability |
+| [Speed](speed.md) | The commands that dispatch to child sessions, what is not relaxed, the runtime settings, and how to measure it |
 | [FAQ](faq.md) | Short answers to the questions that come up first |
 | [Evidence & limits](evidence.md) | The primary source, the empirical support (and its caveats), the critiques, and the consolidated known limits |
 | [Security](security.md) | The SkillSpector scan, its findings and their triage |

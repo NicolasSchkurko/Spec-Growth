@@ -112,6 +112,8 @@ A capability is the `openspec/specs/<capability>/` folder — id `cap:<capabilit
 
 Components in `ARCHITECTURE.dsl` carry the tag `cap:<capability>`. The gate checks the mapping in both directions: an untagged capability → run `/diagram-sync`; a tag with no capability → stale. The BOARD shows the registry in its **Capabilities** section.
 
+**Reorganizing them.** A capability is named for a cohesive behavior; when the name stops describing what it owns, a change moves the requirements — specs are never edited in place, they change through changes. The new capability's delta opens with `## Purpose`; every requirement moved out of the old one is listed under `## REMOVED Requirements` with a **Reason** and a **Migration**, and the requirement's text and `[@test]` move unchanged. It is a `refactor` (no behavior change; the green suite is the proof), and the `cap:` tags follow the move. If the reorganization contradicts something already written (an ADR, a living requirement), it is a ⚔ conflict until the human approves the reversal with an ADR. Recipe: [Workflows → Splitting a capability](workflows.md#10-splitting-a-capability-moving-requirements).
+
 ## Requirement IDs and citations (optional)
 
 Specs may carry stable IDs — `[REQ-<capability>-<n>]` — and code or tests may cite them with `@cita REQ-…`. When the project uses IDs, the gate validates duplicates (within a file or across living specs) and broken citations: a citation to a nonexistent ID is an error — the **hallucination detector**. Per-project opt-in: "missing citation" notices activate once the change already cites.
