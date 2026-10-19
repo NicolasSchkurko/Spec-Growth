@@ -12,7 +12,7 @@
 - Orphan-code / undeclared-dependency detection over the import graph (advisory semantic pass + codebase-memory).
 - Consumer migration on breaking changes; auto-archive; a generated CI workflow (documented policy, not an asset).
 
-**Evidence base**: the v1.0 comprehension axis is grounded in recent GenAI-assisted SE research (comprehension debt, explanation gates, skill formation, cognitive-load-aware refactoring) — predominantly novice-study populations: mechanisms transfer, effect sizes do not. Full map and caveats in the repo's `docs/evidence.md`.
+**Evidence base**: the v1.0 comprehension axis is grounded in recent GenAI-assisted SE research (comprehension debt, explanation gates, skill formation, cognitive-load-aware refactoring) — predominantly novice-study populations: mechanisms transfer, effect sizes do not. Full map and caveats in the repo's `references/evidence.md`.
 
 **Known limits:**
 - Evidence is local and per-clone, and **not tamper-proof** (unsigned): the real barrier is running `--run-tests` in CI.

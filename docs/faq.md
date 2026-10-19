@@ -74,7 +74,7 @@ Yes. `/spec-gate`, `/spec-deps-graph` and `/diagram-sync` run as **background ch
 ## About
 
 **Is Spec Growth based on research?**
-Partly, and it says which part: the comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — novice-heavy populations, so the mechanisms transfer but the effect sizes do not. The rest is engineering practice from audit rounds. Full map and caveats: [Evidence & limits](evidence.md).
+Partly, and it says which part: the comprehension mechanisms (tech brief, teach-back, expressivity rules, `/spec-explain`) map to recent GenAI-assisted SE studies on comprehension debt, explanation gates, skill formation and cognitive-load-aware refactoring — novice-heavy populations, so the mechanisms transfer but the effect sizes do not. The rest is engineering practice from audit rounds. Full map and caveats: [Evidence & limits](../references/evidence.md).
 
 **Do the docs go stale?**
 The system's own honesty rule applies to itself: `SKILL.md` (→ `references/status.md`) carries the implementation-status section, and if a script changes, the skill and these documents are updated together.

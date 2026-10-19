@@ -21,5 +21,5 @@ Canonical source of truth: [`../SKILL.md`](../SKILL.md); if a script changes, th
 | [Gates](gates.md) | What the mechanical gate checks, the modes and flags, and the CI policy |
 | [Workflows](workflows.md) | Step-by-step recipes: feature, bug triage, refactor, protected zone, waiver, conflict, archiving, `/spec-explain`, `/spec-deps-graph`, splitting a capability |
 | [FAQ](faq.md) | Short answers to the questions that come up first |
-| [Evidence & limits](evidence.md) | The primary source, the empirical support (and its caveats), the critiques, and the consolidated known limits |
+| [Evidence & limits](../references/evidence.md) | The primary source, the empirical support (and its caveats), the critiques, and the consolidated known limits |
 | [Security](security.md) | The SkillSpector scan, its findings and their triage |
