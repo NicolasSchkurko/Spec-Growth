@@ -16,6 +16,7 @@ You are operating **Spec Growth** (load the `spec-growth` skill for details). Ex
    - Limits and failure modes: forced close, data/cache cleared, concurrency, no network.
    - Touched APIs: the framework/library APIs involved, 1–2 sentences each (what it is, why it is used here).
    - A **Mermaid** flow diagram of the data path.
+   - **Citation format, non-negotiable**: every hop is written `path:line` — never a bare `:12`, never a range without its path (`tests/x.test.mjs:8-10`, not `:8-10`). The answer carries **at least two**: the entry point and the line where the state is stored or read. That is what makes the explanation checkable instead of plausible.
 4. **Anchor the note** (recommended when the behavior was hard to explain): `docs/mechanisms/<topic>.md` — the child writes it when the brief asks; otherwise you do. If a living spec covers the behavior, link the note from the change/context around it — **never paste implementation prose into the spec itself** (the spec is the contract; mechanism notes are documentation).
 5. **Act on what you find**:
    - Behavior not described by any requirement → propose `/spec-add` (or `/spec-triage` if code and spec disagree).
