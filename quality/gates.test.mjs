@@ -9,7 +9,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -20,12 +20,28 @@ const TEMPLATE = join(HERE, "conformance", "template");
 const SCRIPTS = join(HERE, "..", "assets", "scripts");
 const DECISIONS = `# Decisions\n\n## [2026-10-19] Approve the change (change: demo)\n- **Decision:** approved\n`;
 
+const made = [];
 function fixture(mutate) {
   const dir = mkdtempSync(join(tmpdir(), "sg-gate-"));
+  made.push(dir);
   cpSync(TEMPLATE, dir, { recursive: true });
   mutate?.(dir);
   return dir;
 }
+
+// Leave no throwaway repos behind (Windows keeps handles briefly; retry a few times).
+test.after(() => {
+  for (const dir of made) {
+    for (let i = 0; i < 5; i++) {
+      try {
+        rmSync(dir, { recursive: true, force: true });
+        break;
+      } catch {
+        /* retry */
+      }
+    }
+  }
+});
 
 function run(script, root, args = []) {
   const r = spawnSync(process.execPath, [join(SCRIPTS, script), "--root", root, ...args], {
