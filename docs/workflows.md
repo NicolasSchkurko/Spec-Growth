@@ -2,7 +2,21 @@
 
 Recipes for the situations that come up most. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
 
-## 0. What runs in the background (apply and verify)
+## 0. What runs in the background (the commands that dispatch)
+
+| Command | What goes out (in one batch) | What stays with you |
+|---|---|---|
+| `/spec-add` | `spec-recon`: reuse candidates, protected zones, overlaps, prior decisions | the single round of questions + the draft |
+| `/spec-triage` | `spec-explainer` (the code side) + `spec-recon` (the spec side) | the one question: who is right? |
+| `/spec-apply` | `spec-implementer`, then `spec-gate` + `spec-walkthrough` | the brief, the approvals, the join |
+| `/spec-verify` | `spec-gate` + one `spec-auditor` per active change | the teach-back, the vetted report |
+| `/spec-explain` | `spec-explainer` (one per independent behavior, cap 3) | verifying the hops and delivering it in its own words |
+| `/spec-resolve` | — (one `question` round replaces N turns) | every decision |
+| `/spec-gate` · `/spec-deps-graph` · `/diagram-sync` | the whole command is the child | — |
+
+The two rules: **independent work goes out in one batch**, and **what a child returns is a claim** until the parent checks it (the diff against the brief, the `file:line`s against the code). Nothing human-only is delegated. Details, costs, the published caveats and how to measure it: [Speed](../docs/speed.md).
+
+`/spec-apply` and `/spec-verify` in detail:
 
 ```mermaid
 sequenceDiagram

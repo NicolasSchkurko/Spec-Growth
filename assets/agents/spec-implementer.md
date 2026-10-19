@@ -44,7 +44,7 @@ Change id and branch · the goal **per requirement** · the **allowed files** (`
 
 ## Contract
 
-1. **Only the allowed files.** You write inside `targets` and `tests`. Anything else you believe must change is **reported, not edited**. Your `edit` on `openspec/**`, `.git/**` and `**/.env*` is denied on purpose: the metadata is the parent's.
+1. **Only the allowed files.** Read the files you need **in parallel** and orient once (LSP for symbols, grep for literals) instead of opening one file per step. You write inside `targets` and `tests`. Anything else you believe must change is **reported, not edited**. Your `edit` on `openspec/**`, `.git/**` and `**/.env*` is denied on purpose: the metadata is the parent's.
 2. **Reuse first** (the repo's `AGENTS.md` ladder): does it need to exist at all? Already in this repo (helper, component, pattern)? Standard library or platform feature? An installed dependency — **never add one** for a few lines. Can it be one clear line? Otherwise, the minimum that works. Name what you skipped.
 3. **Every requirement gets its proof.** Write the test for each `[@test]` the delta spec declares, and cite `@cita REQ-…` where the repo uses requirement IDs. Do not cut trust-boundary validation, error handling that prevents data loss, security or accessibility.
 4. **Run the tests that cover your files** as you go. The full suite is the parent's gate, not yours. Reds **outside** your files: report them, do not chase them.

@@ -43,7 +43,7 @@ sequenceDiagram
     end
 ```
 
-You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which walks you through each pending item. Hand-editing works too, because the gate checks the record, not its author (a documented limit — the risky approvals are cross-checked against `DECISIONS.md`).
+You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which asks every pending item in one round. Hand-editing works too, because the gate checks the record, not its author (a documented limit — the risky approvals are cross-checked against `DECISIONS.md`).
 
 ## What to record for each kind of approval
 

@@ -22,7 +22,7 @@ Windows (PowerShell):
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.config\opencode\skills\spec-growth"
 ```
 
-**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and the five agents, and regenerates the BOARD.
+**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and the eight agents, and regenerates the BOARD.
 
 **3. Create your first change:** `/spec-add "<idea>"` → review and accept → `/spec-apply` → `/spec-verify` → merge → archive. The full walkthrough: [Workflows](docs/workflows.md).
 
@@ -36,7 +36,7 @@ git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.
 | `/spec-verify` | Gate + parallel per-change semantic audit + teach-back for tech briefs (records your sign-off) |
 | `/spec-explain` | Explain existing behavior with real `file:line` traces; proposes a refactor when the code is opaque |
 | `/spec-gate` | Measure and record — static by default, `--run-tests` for evidence. Fixes nothing |
-| `/spec-deps-graph` | What is not archived: the declared-deps graph + one line on what each living spec and change in flight does (read-only) |
+| `/spec-deps-graph` | What is not archived: the declared-deps graph + one line on what each living spec and change in flight does (read-only, free background model) |
 | `/spec-resolve` | Walk through what awaits the human: approvals, decisions, conflicts, waivers |
 | `/diagram-sync` | Diff the C4 model (`ARCHITECTURE.dsl`) against code and IaC |
 
@@ -49,7 +49,7 @@ The `bug-finder` skill runs alongside in **anchored mode**: it audits against th
 - **Risky changes carry a tech brief:** persistence/state, concurrency, networking, platform SDKs, security or a new dependency → a plain-language `walkthrough.md` and a 3-question teach-back before your sign-off.
 - **Deviations block closure:** waivers, open decisions and conflicts stay pending until the human resolves them, and every resolution lands in `DECISIONS.md`.
 - **The BOARD shows what awaits you.** Specs own behavior, `ARCHITECTURE.dsl` owns structure, `DECISIONS.md` owns the why.
-- **Heavy work runs in parallel, and the implementation runs fresh.** `/spec-apply` hands the coding to a `spec-implementer` child with a precise brief (allowed files, goal per requirement) — a *fresh context by construction*, which is what the skill already asked for — and dispatches the test suite and the tech brief in parallel; `/spec-verify` dispatches one read-only audit child per change. See [Speed](docs/speed.md).
+- **Heavy work runs in parallel, and the implementation runs fresh.** Six of the nine commands dispatch scoped child sessions: `/spec-add` and `/spec-triage` survey with `spec-recon` while you are still answering questions, `/spec-explain` traces with `spec-explainer`, `/spec-apply` hands the coding to a `spec-implementer` child with a precise brief (allowed files, goal per requirement) — a *fresh context by construction*, which is what the skill already asked for — and dispatches the test suite and the tech brief in parallel, and `/spec-verify` dispatches one read-only audit child per change. See [Speed](docs/speed.md).
 
 Details, diagrams and edge cases: [docs/](docs/README.md).
 
@@ -60,7 +60,7 @@ SKILL.md            the canonical spec (router: glossary, operations, rules)
 references/         INIT · scripts, flags & gate policy · implementation status & limits
 docs/               concepts · lifecycle · gates · workflows · speed · FAQ · evidence · security
 assets/commands/    the nine commands copied into a repo by the INIT
-assets/agents/      the five subagents (spec-implementer · spec-gate · spec-auditor · spec-walkthrough · diagram-sync)
+assets/agents/      the eight subagents (spec-implementer · spec-gate · spec-auditor · spec-walkthrough · spec-recon · spec-explainer · spec-deps-graph · diagram-sync)
 assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
 assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch
 quality/            the conformance suite and its recorded results

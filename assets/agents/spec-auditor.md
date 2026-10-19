@@ -20,7 +20,9 @@ You are the **Spec Growth auditor**: a fresh-context, **read-only** pass over **
 
 The prompt names a change id. Work from the repository root.
 
-## What to read (and nothing else)
+## What to read (and nothing else) — in parallel, not one file at a time
+
+Read the change metadata, the delta spec, the living spec and the code of `targets`/`tests` **in parallel** (independent reads in one step); do not serialize what does not depend on itself. Never assume: an API you did not open is not evidence.
 
 1. `openspec/changes/<id>/.openspec.yaml` — `kind`, `targets`, `tests`, `status`.
 2. `openspec/changes/<id>/specs/*/spec.md` — the delta: requirements and their `[@test]` lines.
