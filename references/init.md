@@ -9,8 +9,8 @@ openspec/                  # specs/ · changes/(+archive) · schemas/spec-anchor
 BOARD.md                   # generated
 DECISIONS.md               # append-only (ADR-lite)
 ARCHITECTURE.dsl           # C4 (Structurizr), once diagram-sync is used
-scripts/gates/             # lib.mjs · gate-check.mjs · build-board.mjs · compact-archive.mjs · build-map.mjs
-.opencode/commands/        # spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-gate · spec-resolve · diagram-sync
+scripts/gates/             # lib.mjs · gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs
+.opencode/commands/        # spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync
 docs/mechanisms/           # optional mechanism notes (from /spec-explain)
 AGENTS.md                  # constitution (Spec Growth section)
 ```

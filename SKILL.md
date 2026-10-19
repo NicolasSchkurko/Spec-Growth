@@ -1,6 +1,6 @@
 ---
 name: Spec Growth
-description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-gate · spec-resolve · diagram-sync).'
+description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
 ---
 
 # Spec Growth
@@ -47,15 +47,16 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 | Command | Where | Model |
 |---|---|---|
 | `/spec-gate` | background child (`subagent: true`) | `opencode-go/space-bunny` |
+| `/spec-deps-graph` | background child (`subagent: true`) | `opencode/space-bunny-free` |
 | `/diagram-sync` | background child (`subagent: true`) | `opencode-go/space-bunny` |
 | `/spec-resolve` · `/spec-verify` · `/spec-explain` | session (interactive) | inherited |
 | `/spec-add` · `/spec-triage` · `/spec-apply` | session (core work) | inherited |
 
-**How to change a model**: edit the YAML frontmatter of the command file — `.opencode/commands/spec-gate.md` (or `diagram-sync.md`) — fields `model: provider/model#variant` and `subagent: true|false` (or route via another agent with `agent: <id>`). Commands reload automatically; no restart. Removing `model` falls back to the agent's model, then to the session model. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
+**How to change a model**: edit the YAML frontmatter of the command file — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`) — fields `model: provider/model#variant` and `subagent: true|false` (or route via another agent with `agent: <id>`). Commands reload automatically; no restart. Removing `model` falls back to the agent's model, then to the session model. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
 
 ## Safety & scope
 
-- **What this skill runs**: Node scripts from `scripts/gates/` (gate, board, compact, map), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
+- **What this skill runs**: Node scripts from `scripts/gates/` (gate, board, graph, compact, map), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
 - **What it never does**: exfiltrate repository or conversation data; auto-grant approvals, waivers or comprehension sign-offs (human-only); delete uncommitted work (`compact-archive` requires a clean, committed folder).
 - **Human-in-the-loop**: protected zones need `human_approved` + a `DECISIONS.md` entry; waivers need a human grant; archiving needs `--pre-archive` OK.
 - **Runtime permissions** live in OpenCode's agent configuration (`agents.<id>.permissions`), not in this file — the skill declares intent; the runtime enforces the ceiling. INIT installs optional MCPs only when missing, pinned to a reviewed version.
@@ -70,6 +71,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 | `/spec-verify` | Mechanical gate + advisory semantic pass (drift, opacity) + **comprehension teach-back** for tech briefs: asks the 3 questions, validates your answers against the code, records the sign-off. Proposes **waivers** / **decision requests** / **conflicts** — never silence |
 | `/spec-explain` | Explain existing behavior: traces the real path (`file:line`), plain-language mechanism + Mermaid, anchors a mechanism note (`docs/mechanisms/`), proposes a `kind: refactor` when the code is opaque. Does not edit code |
 | `/spec-gate` | Measure and record: `gate-check` (static by default; `--run-tests` for CI/verified) + board. Fixes nothing |
+| `/spec-deps-graph` | What is **not archived**, at a glance: declared-deps Mermaid graph + one line per living capability and change in flight. Read-only |
 | `/spec-resolve` | Resolve what awaits the human: 🔒 approvals · ⏸ decisions · ⚔ conflicts · ⚠ `requested` waivers. Every resolution lands in `DECISIONS.md` |
 | `/diagram-sync` | Diff `ARCHITECTURE.dsl` from code+IaC; capability tags (`cap:<capability>`); validated with Structurizr |
 

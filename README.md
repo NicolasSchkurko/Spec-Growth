@@ -22,7 +22,7 @@ Windows (PowerShell):
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.config\opencode\skills\spec-growth"
 ```
 
-**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the eight commands and regenerates the BOARD.
+**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and regenerates the BOARD.
 
 **3. Create your first change:** `/spec-add "<idea>"` → review and accept → `/spec-apply` → `/spec-verify` → merge → archive. The full walkthrough: [Workflows](docs/workflows.md).
 
@@ -36,6 +36,7 @@ git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.
 | `/spec-verify` | Gate + adversarial semantic pass + teach-back for tech briefs (records your sign-off) |
 | `/spec-explain` | Explain existing behavior with real `file:line` traces; proposes a refactor when the code is opaque |
 | `/spec-gate` | Measure and record — static by default, `--run-tests` for evidence. Fixes nothing |
+| `/spec-deps-graph` | What is not archived: the declared-deps graph + one line on what each living spec and change in flight does (read-only) |
 | `/spec-resolve` | Walk through what awaits the human: approvals, decisions, conflicts, waivers |
 | `/diagram-sync` | Diff the C4 model (`ARCHITECTURE.dsl`) against code and IaC |
 
@@ -57,15 +58,15 @@ Details, diagrams and edge cases: [docs/](docs/README.md).
 SKILL.md            the canonical spec (router: glossary, operations, rules)
 references/         INIT · scripts, flags & gate policy · implementation status & limits
 docs/               concepts · lifecycle · gates · workflows · FAQ · evidence · security
-assets/commands/    the eight commands copied into a repo by the INIT
-assets/scripts/     gate-check.mjs · build-board.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
+assets/commands/    the nine commands copied into a repo by the INIT
+assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
 assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch
 quality/            the conformance suite and its recorded results
 ```
 
 ## Status
 
-**v1.3** — hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
+**v1.4** — adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
 
 ## License
 

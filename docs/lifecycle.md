@@ -100,4 +100,4 @@ The gate looks inside each `##` section: if the heading mentions the change id a
 - Dependency graph (declared deps)
 - Archive + warnings
 
-Regenerate it any time with `node scripts/gates/build-board.mjs`, or run `/spec-resolve` to be walked through each item.
+Regenerate it any time with `node scripts/gates/build-board.mjs`, or run `/spec-resolve` to be walked through each item. For the read-only view of the non-archived specs and their declared deps alone, run `/spec-deps-graph`.

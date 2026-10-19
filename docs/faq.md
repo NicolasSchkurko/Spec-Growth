@@ -48,10 +48,13 @@ A living capability (a spec folder, `cap:<capability>`) is realized by no compon
 **How do I see everything that awaits me right now?**
 `BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · 🧠 comprehension sign-offs · in progress · drafts · waivers · Capabilities · Dependency graph · blocked · archive · warnings.
 
+**How do I see which specs exist and how they depend on each other?**
+Run `/spec-deps-graph`: it renders the declared-deps graph and adds one plain line on what each spec that is **not archived** does (the living ones plus the changes in flight). It is read-only and runs on a free background model, so it costs you no session context. The raw inventory alone: `node scripts/gates/build-graph.mjs`.
+
 ## Models
 
-**Can I change which model runs `/spec-gate` or `/diagram-sync`?**
-Yes. Those two run as **background subagents with a cheap model** (`opencode-go/space-bunny` by default), so their work never pollutes your session. Change it in the command's frontmatter — `.opencode/commands/spec-gate.md` (or `diagram-sync.md`): `model: provider/model#variant` and `subagent: true|false` (or `agent: <id>` to route via another agent). Commands reload automatically, no restart needed. Remove the `model` line to fall back to the agent's model, then to your session's model. The interactive commands (`add`, `triage`, `apply`, `verify`, `explain`, `resolve`) always inherit your session model — the assumption is that it is your most capable one. Full table: `SKILL.md` → *Model routing*.
+**Can I change which model runs `/spec-gate`, `/spec-deps-graph` or `/diagram-sync`?**
+Yes. Those run as **background subagents** (`/spec-gate` and `/diagram-sync` on a cheap model, `opencode-go/space-bunny`; `/spec-deps-graph` on a free model, `opencode/space-bunny-free`), so their work never pollutes your session. Change it in the command's frontmatter — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`): `model: provider/model#variant` and `subagent: true|false` (or `agent: <id>` to route via another agent). Commands reload automatically, no restart needed. Remove the `model` line to fall back to the agent's model, then to your session's model. The interactive commands (`add`, `triage`, `apply`, `verify`, `explain`, `resolve`) always inherit your session model — the assumption is that it is your most capable one. Full table: `SKILL.md` → *Model routing*.
 
 ## About
 

@@ -96,3 +96,9 @@ Same flow as a feature, with `kind: refactor`. The contract does not change, so 
 1. `/spec-explain "how settings are persisted"` — the agent traces the real path in the code (`file:line`), with no assumptions.
 2. It delivers a step-by-step mechanism, physical traceability, limits and failure modes, touched APIs, and a Mermaid flow — and (for hard-won knowledge) anchors a note under `docs/mechanisms/`.
 3. If the code is opaque, it proposes a `kind: refactor` change; if the behavior is in no spec, it proposes `/spec-add` or `/spec-triage`. It never edits code or specs.
+
+## 9. The whole picture (`/spec-deps-graph`)
+
+1. `/spec-deps-graph` — a read-only pass over everything that is **not archived**: the declared-deps graph (Mermaid) plus one plain line on what each living spec and each change in flight does.
+2. The script behind it (`node scripts/gates/build-graph.mjs`) is deterministic; the one-line descriptions are the only model work, and they run on a **free model** in a background subagent — no session context spent.
+3. Use it before planning work ("what already exists? what is sequenced after what?") or when the BOARD feels too heavy. It changes nothing: a behavior no spec describes gets flagged for `/spec-add` or `/spec-triage`, not fixed here.
