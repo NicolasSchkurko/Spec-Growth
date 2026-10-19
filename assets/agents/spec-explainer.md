@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — read-only trace of ONE behavior through the real code (file:line per hop). Writes the mechanism note as an artifact; invents nothing.
 mode: subagent
-model: opencode/glm-5.3-flash-free
+model: opencode/deepseek-v4.1-flash-free
 steps: 24
 permissions:
   - action: edit
