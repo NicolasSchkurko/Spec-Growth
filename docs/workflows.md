@@ -2,6 +2,32 @@
 
 Recipes for the situations that come up most. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
 
+## 0. A small, low-risk change (the fast path)
+
+```mermaid
+sequenceDiagram
+    participant Dev as You
+    participant Ag as Agent
+    participant R as risk-router
+    participant G as gate
+    Dev->>Ag: /spec-quick "recortar el título a 80 chars"
+    Ag->>R: risk-router --kind fix --targets src/notes.js
+    R-->>Ag: FAST
+    Ag->>Dev: one message: clarify + alternatives + "approve and I'll carry it to green"
+    Dev->>Ag: "dale, aplicalo"
+    Ag->>G: add + accept + branch + code + tests + gate-check --run-tests
+    G-->>Ag: GREEN (evidence recorded) → verified
+    Dev->>Ag: merge → /spec-gate --pre-archive → archive
+```
+
+1. `/spec-quick "<idea>"` — the agent routes the change first: `node scripts/gates/risk-router.mjs` says `FAST` or `FULL`.
+2. `FULL` (architecture, protected zone, persistence/concurrency/network/SDK/security, new dependency, new capability, conflict, decision, too many roots) → it stops and hands off to `/spec-add`. Nothing is lost.
+3. `FAST` → **one message** with the clarifying questions, the alternatives table and the approval request. Your single explicit *yes* authorizes create + accept + apply.
+4. On your yes it runs the whole loop in that same turn and reaches `verified` with green evidence. A tech brief discovered mid-apply asks its 3 questions **together**, once.
+5. Merge, then `--pre-archive <id>` → OK → `openspec archive <id>`. Unchanged.
+
+Nothing is relaxed: the gate, the evidence and every human-only record (protected zones, waivers, decisions, conflicts, sign-offs) behave exactly as below. Details and how to measure it: [Speed](../docs/speed.md).
+
 ## 1. A new feature
 
 ```mermaid
@@ -102,3 +128,4 @@ Same flow as a feature, with `kind: refactor`. The contract does not change, so 
 1. `/spec-deps-graph` — a read-only pass over everything that is **not archived**: the declared-deps graph (Mermaid) plus one plain line on what each living spec and each change in flight does.
 2. The script behind it (`node scripts/gates/build-graph.mjs`) is deterministic; the one-line descriptions are the only model work, and they run on a **free model** in a background subagent — no session context spent.
 3. Use it before planning work ("what already exists? what is sequenced after what?") or when the BOARD feels too heavy. It changes nothing: a behavior no spec describes gets flagged for `/spec-add` or `/spec-triage`, not fixed here.
+

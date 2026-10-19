@@ -4,7 +4,7 @@ description: Spec Growth — verify (gate + semantic audit + persisted findings 
 
 You are operating **Spec Growth** (load the `spec-growth` skill for details). Verification requested: "$ARGUMENTS" (empty = all active changes).
 
-1. **Mechanical gate**: `node scripts/gates/gate-check.mjs --run-tests` (records green evidence; if you do not want to run the suite right now, run static and say so). Report errors and warnings verbatim.
+1. **Mechanical gate**: `node scripts/gates/gate-check.mjs --run-tests` (records green evidence). **Reuse fresh evidence**: if `openspec/evidence.json` already holds a **fresh** green run for this change (the fingerprint of its `targets` + `tests` matches — so `/spec-apply` just recorded it and nothing changed since), run the **static** gate instead (`node scripts/gates/gate-check.mjs --scope <id>`) and say you reused it: re-running the whole suite would prove exactly what the recorded fingerprint already proves. Run `--run-tests` again whenever the fingerprint moved, before `--pre-archive`, or in CI. Report errors and warnings verbatim.
 2. **Semantic pass** (advisory; over active changes and their `targets`):
    - Read each delta spec and the code of its targets (use the codebase-memory graph if available).
    - Look for four classes of drift: (a) requirements without an implementation; (b) implemented behavior no spec describes; (c) tests that prove something other than what is declared; (d) **opaque implementation** — cryptic names, unexplained framework magic, deep nesting, undeclared implicit persistence or side effects (code → text audit).

@@ -45,6 +45,12 @@ A living capability (a spec folder, `cap:<capability>`) is realized by no compon
 
 ## Day to day
 
+**A one-line fix feels heavier than just vibecoding it. Can it be faster?**
+Yes: `/spec-quick` is the low-risk fast path. It batches the whole loop (create → accept → implement → gate) into **one interaction and one turn**, instead of one turn per step, and asks a tech brief's 3 questions together. The guardrail is `risk-router.mjs`: architecture, protected zones, persistence/concurrency/network/SDK/security, a new dependency or capability, conflicts and open decisions all send the change back to the full flow (`/spec-add`). The gate, the green evidence and every human-only record are identical — the fast path removes round-trips, not checks. Details: [Speed](speed.md).
+
+**Why did `/spec-verify` not re-run the test suite?**
+Because the evidence was already fresh: the fingerprint of the change's `targets` + `tests` matched the recorded green run, so re-running would prove the same thing. It ran static (`--scope <id>`) and said so. If anything changed, the gate reports `STALE evidence` and the suite runs again — before `--pre-archive`, or in CI, it always runs.
+
 **How do I see everything that awaits me right now?**
 `BOARD.md` (regenerate with `node scripts/gates/build-board.mjs`) or run `/spec-resolve`. Sections: 🔒 approvals · ⏸ decisions and ⚔ conflicts · 🧠 comprehension sign-offs · in progress · drafts · waivers · Capabilities · Dependency graph · blocked · archive · warnings.
 

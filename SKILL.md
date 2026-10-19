@@ -1,6 +1,6 @@
 ---
 name: Spec Growth
-description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
+description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, fast-path small changes, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-quick · spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
 ---
 
 # Spec Growth
@@ -49,7 +49,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 | `/spec-gate` | background child (`subagent: true`) | `opencode-go/space-bunny` |
 | `/spec-deps-graph` | background child (`subagent: true`) | `opencode/space-bunny-free` |
 | `/diagram-sync` | background child (`subagent: true`) | `opencode-go/space-bunny` |
-| `/spec-resolve` · `/spec-verify` · `/spec-explain` | session (interactive) | inherited |
+| `/spec-resolve` · `/spec-verify` · `/spec-explain` · `/spec-quick` | session (interactive) | inherited |
 | `/spec-add` · `/spec-triage` · `/spec-apply` | session (core work) | inherited |
 
 **How to change a model**: edit the YAML frontmatter of the command file — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`) — fields `model: provider/model#variant` and `subagent: true|false` (or route via another agent with `agent: <id>`). Commands reload automatically; no restart. Removing `model` falls back to the agent's model, then to the session model. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
@@ -65,6 +65,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 
 | Command | Role |
 |---|---|
+| `/spec-quick` | **Fast path** for a low-risk change: `risk-router` gates it (FULL → `/spec-add`), then ONE interaction and add + accept + apply + gate in the same turn. Same gate, same evidence, same human-only records |
 | `/spec-add` | Create a change (proposal + delta spec + metadata + `[REQ-…]` IDs), with **technical alternatives** (reuse / up to 3 options), **expected outcome** (feature/architecture), protected-zone warnings and decision requests. Does NOT write code |
 | `/spec-triage` | Bug/discrepancy → decide the side (human) → ADR + `kind: fix` change with a regression test |
 | `/spec-apply` | Apply ONE change on its branch with **clean context**: tests + gate (`--run-tests`) + `@cita` citations; `verified` only with green evidence. Protected zone → asks for your explicit approval |
@@ -76,6 +77,8 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 | `/diagram-sync` | Diff `ARCHITECTURE.dsl` from code+IaC; capability tags (`cap:<capability>`); validated with Structurizr |
 
 **Resolving pendings**: `/spec-resolve` (or ask the agent conversationally) — the decision is always yours and no resolution counts without an ADR in `DECISIONS.md`. Comprehension sign-offs are not resolved there: they happen in `/spec-verify`, as the walkthrough teach-back.
+
+**Speed**: `/spec-quick` collapses the small-change loop (add → accept → apply → gate) into **one interaction and one turn**, and asks a tech brief's 3 questions in one message. `scripts/gates/risk-router.mjs` decides mechanically whether a change may take it (architecture, protected zones, tech briefs, new capabilities, decisions and conflicts all send it to the full flow); the gate, the green evidence and every human-only record are identical. Diagnosis, guardrail and the measurement protocol: [docs/speed.md](docs/speed.md).
 
 **Approvals — how they happen**: the human authorizes with an **explicit sentence** in the conversation; the agent **writes the record**; the gate **verifies the record** (never the other way round, never by silence). You do not need to edit YAML by hand: ask in any session or run `/spec-resolve`, which presents pendings one by one.
 
@@ -103,6 +106,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 - **Protected**: never set `human_approved: true` on your own; the human indicates it explicitly.
 - **Capabilities**: declare `provides: [cap:x]` in the owning spec; do not create duplicates.
 - **Reuse first** (code minimalism): the ladder lives in `AGENTS.md`. Orient before exploring: the **native LSP tool** for symbols (`lsp: true`; grep for literals), `codebase-memory` only in large repos, and `node scripts/gates/build-map.mjs` as the zero-dependency fallback.
+- **Fast path**: `/spec-quick` is allowed **only** for what `risk-router.mjs` calls `FAST`; it batches the human's questions into one interaction but never self-approves, never skips the gate, and hands anything risky back to `/spec-add`.
 - **Tech brief**: when a change touches persistence/state, concurrency, networking, platform SDKs, security or adds a dependency, declare `tech_brief: true`; write `walkthrough.md` in the plainest language and generate 3 change-specific questions at apply. **Never fake the human's answers** — the sign-off is theirs, recorded only after their explicit confirmation.
 - The agent proposes and executes; **the human decides**. One apply = one branch = one change.
 - **Clean context** when implementing: a fresh (or deliberately compacted) session (mixed evidence: one study with a modest result, p≈0.07 — a reasonable heuristic, not a universal law).

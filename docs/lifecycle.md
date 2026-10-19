@@ -23,6 +23,8 @@ stateDiagram-v2
 
 There is no workflow engine: the transitions are what you do next, and the gate only validates the **invariants of the recorded state** — a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
 
+The **fast path** (`/spec-quick`) does not add or skip a state: for a low-risk change it performs `draft → accepted → applying → verified` inside one turn, on the human's single explicit approval, and hands anything risky back to the full flow. Same states, same records, fewer round-trips ([Speed](speed.md)).
+
 ## The approval circuit
 
 One rule covers every approval: **the human authorizes with an explicit sentence; the agent writes the record; the gate verifies the record.** Never the other way around, never by silence.

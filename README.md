@@ -22,7 +22,7 @@ Windows (PowerShell):
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.config\opencode\skills\spec-growth"
 ```
 
-**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and regenerates the BOARD.
+**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the ten commands and regenerates the BOARD.
 
 **3. Create your first change:** `/spec-add "<idea>"` → review and accept → `/spec-apply` → `/spec-verify` → merge → archive. The full walkthrough: [Workflows](docs/workflows.md).
 
@@ -30,6 +30,7 @@ git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.
 
 | Command | Role |
 |---|---|
+| `/spec-quick` | Fast path for a low-risk change: the router decides, then one approval carries add + apply + gate |
 | `/spec-add` | Draft a change: proposal, delta spec, metadata, alternatives. No code |
 | `/spec-triage` | Bug or discrepancy → you decide which side is right → fix change with a regression test |
 | `/spec-apply` | Implement one change on its branch: tests + green evidence; writes the tech brief; asks for zone approvals |
@@ -49,6 +50,7 @@ The `bug-finder` skill runs alongside in **anchored mode**: it audits against th
 - **Risky changes carry a tech brief:** persistence/state, concurrency, networking, platform SDKs, security or a new dependency → a plain-language `walkthrough.md` and a 3-question teach-back before your sign-off.
 - **Deviations block closure:** waivers, open decisions and conflicts stay pending until the human resolves them, and every resolution lands in `DECISIONS.md`.
 - **The BOARD shows what awaits you.** Specs own behavior, `ARCHITECTURE.dsl` owns structure, `DECISIONS.md` owns the why.
+- **Small changes move fast.** `/spec-quick` batches the whole low-risk loop into one approval, and `risk-router.mjs` sends anything risky (architecture, protected zones, tech briefs, new capabilities) back to the full flow. See [Speed](docs/speed.md).
 
 Details, diagrams and edge cases: [docs/](docs/README.md).
 
@@ -57,16 +59,16 @@ Details, diagrams and edge cases: [docs/](docs/README.md).
 ```
 SKILL.md            the canonical spec (router: glossary, operations, rules)
 references/         INIT · scripts, flags & gate policy · implementation status & limits
-docs/               concepts · lifecycle · gates · workflows · FAQ · evidence · security
-assets/commands/    the nine commands copied into a repo by the INIT
-assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
+docs/               concepts · lifecycle · gates · workflows · speed · FAQ · evidence · security
+assets/commands/    the ten commands copied into a repo by the INIT
+assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · risk-router.mjs · lib.mjs
 assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch
 quality/            the conformance suite and its recorded results
 ```
 
 ## Status
 
-**v1.4** — adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
+**v1.5 prototype** (branch `experiment/fast-path`) — adds the **fast path** (`/spec-quick` + `risk-router.mjs`) so a low-risk change costs one approval instead of the full ceremony, without relaxing the gate, the evidence or any human-only record ([Speed](docs/speed.md)). **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
 
 ## License
 
