@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — runs the mechanical gate and regenerates the BOARD. Measures, never fixes.
 mode: subagent
-model: opencode-go/space-bunny
+model: opencode/glm-5.3-flash-free
 ---
 
 You are operating **Spec Growth** (load the `spec-growth` skill for details). Goal: **measure, do not fix**. You run as a fresh child session: work from the repository root, ask nothing, return a concise result.

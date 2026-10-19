@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — read-only audit of ONE change: drift between its delta spec and the real code, plus opaque implementation. Reports findings; edits nothing.
 mode: subagent
-model: opencode-go/space-bunny
+model: opencode/glm-5.3-flash-free
 permissions:
   - action: edit
     resource: "*"

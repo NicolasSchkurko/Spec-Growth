@@ -50,13 +50,21 @@ The trade is explicit: the parent stops writing code and becomes the **orchestra
 | Agent | Mode | Model | Writes |
 |---|---|---|---|
 | `spec-implementer` | subagent | **the parent session's model** (no `model:` declared — the core work runs on the same model you chose) | code + tests, only inside the brief's files; `openspec/**` denied |
-| `spec-gate` | subagent | `opencode-go/space-bunny` | `BOARD.md`/`board.json` (via the script) |
-| `spec-auditor` | subagent, read-only | `opencode-go/space-bunny` | nothing |
-| `spec-walkthrough` | subagent, confined | `opencode-go/space-bunny` | `openspec/changes/**` only |
-| `spec-recon` | subagent, read-only | `opencode-go/space-bunny` | nothing |
-| `spec-explainer` | subagent, confined | `opencode-go/space-bunny` | `docs/mechanisms/**` only |
-| `spec-deps-graph` | subagent, read-only | `opencode/space-bunny-free` | nothing |
-| `diagram-sync` | subagent, read-only | `opencode-go/space-bunny` | nothing |
+| `spec-gate` | subagent | `opencode/glm-5.3-flash-free` | `BOARD.md`/`board.json` (via the script) |
+| `spec-auditor` | subagent, read-only | `opencode/glm-5.3-flash-free` | nothing |
+| `spec-walkthrough` | subagent, confined | `opencode/glm-5.3-flash-free` | `openspec/changes/**` only |
+| `spec-recon` | subagent, read-only | `opencode/glm-5.3-flash-free` | nothing |
+| `spec-explainer` | subagent, confined | `opencode/glm-5.3-flash-free` | `docs/mechanisms/**` only |
+| `spec-deps-graph` | subagent, read-only | `opencode/glm-5.3-flash-free` | nothing |
+| `diagram-sync` | subagent, read-only | `opencode/glm-5.3-flash-free` | nothing |
+
+Every mechanical child shares one free model — `opencode/glm-5.3-flash-free` — so there is no paid/free mix to confuse when you read a log or move a pin. The pin lives in one line per agent (`.opencode/agents/<id>.md` → `model:`), so switching is a one-line edit plus a probe (below).
+
+**A model in the list is not necessarily runnable.** `opencode models` shows what exists; it does not prove the endpoint answers. Probe before pinning — this repo found `Model unavailable` (a `-free` id that the console lists but the install does not route) and `Insufficient account funds` (a model on the pay-as-you-go provider with no balance) only after pointing agents at them.
+
+```powershell
+opencode run "Reply with exactly: OK" --model <provider>/<model> --auto --standalone
+```
 
 ### What each command dispatches
 
@@ -99,6 +107,22 @@ The design is not invented here; it follows the published practice for orchestra
 - **Artifacts beat the telephone.** Anthropic's appendix recommends having subagents persist structured output and hand back "lightweight references"; that is exactly `spec-walkthrough` (writes `walkthrough.md`, returns what it wrote) and `spec-explainer` (writes the mechanism note, returns a digest).
 - **Do not let one slow child block the report.** Their list of lessons includes synchronous fan-out as a bottleneck; here a child that fails or times out is re-run or done in-session, and the report says so.
 - **Evaluate the end state, with small samples first.** They start evals at ~20 cases and use an LLM judge for free-form output — the frozen conformance suite is the same idea, and it is where any of this must prove itself.
+
+## Which model runs a child (and how to change it)
+
+The pin is a decision, and the honest state of the art is that nobody can eyeball it from a log: "the hard part with these routers is deciding the cheap model is *good enough* without already knowing the answer" ([HN, Rayline](https://news.ycombinator.com/item?id=48448372)). Two forum data points keep it honest:
+
+- **The vendors backtracked on the cheap read-only agent.** Anthropic's built-in Explore subagent "no longer runs on Haiku — it uses your main model". That is exactly the job of `spec-recon` and `spec-explainer`, so "search agents run cheap" is a habit, not a law.
+- **Routing across models can cost more than it saves.** Changing the model between parent and child "can invalidate caches that make the model cheaper" (r/LLMDevs) — which interacts with `warming` above: the session model's cache is warmed, a child on another model starts cold.
+
+So the pin is one model, stated in one place per agent, and easy to move: `.opencode/agents/<id>.md` → `model:`. To compare candidates, probe them — a model in the list is not necessarily runnable:
+
+```powershell
+opencode models
+opencode run "Reply with exactly: OK" --model <provider>/<model> --auto --standalone
+```
+
+What is *not* up for grabs is the split: **risky work escalates** — `kind: architecture` and tech-brief changes are audited in-session or on a stronger model, and `spec-implementer` never gets a cheap pin (it declares no `model:` and runs on the session model). And whatever a cheap child returns, the parent vets it before it reaches you: a detector that invents a `file:line` costs more than one that stays silent.
 
 ## Runtime settings (OpenCode V2)
 

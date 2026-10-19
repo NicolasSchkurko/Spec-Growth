@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — runs build-graph.mjs and writes one plain line per non-archived spec and change. Read-only.
 mode: subagent
-model: opencode/space-bunny-free
+model: opencode/glm-5.3-flash-free
 permissions:
   - action: edit
     resource: "*"

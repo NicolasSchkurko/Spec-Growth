@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — writes the tech brief of ONE change (walkthrough.md + the applying/tech_brief flags) from its real diff. Writes only inside the change folder.
 mode: subagent
-model: opencode-go/space-bunny
+model: opencode/glm-5.3-flash-free
 permissions:
   - action: edit
     resource: "*"

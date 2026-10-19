@@ -1,7 +1,7 @@
 ---
 description: Spec Growth — read-only recon for a request or discrepancy: existing contracts, reuse candidates, protected zones, overlaps and prior decisions. Returns a fixed digest; edits nothing.
 mode: subagent
-model: opencode-go/space-bunny
+model: opencode/glm-5.3-flash-free
 permissions:
   - action: edit
     resource: "*"
