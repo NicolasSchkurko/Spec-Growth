@@ -3,7 +3,10 @@
 
 export const DEFAULT_CLI =
   "C:\\Users\\Luzbelito-WrkLp\\AppData\\Local\\Programs\\@opencodedesktop\\resources\\opencode-cli.exe";
-export const DEFAULT_MODEL = "opencode-go/deepseek-v4.1-flash";
+// No paid model is assumed. Override with CONF_MODEL (or `--model`) to test another
+// one; the suite's recorded baselines name the model they used, so a run is only
+// comparable to a baseline measured on the same model.
+export const DEFAULT_MODEL = process.env.CONF_MODEL || "opencode/glm-5.3-flash-free";
 export const DEFAULT_JUDGE = "opencode-go/gpt-6-luna";
 
 export const TASKS = [

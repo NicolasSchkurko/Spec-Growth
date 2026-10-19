@@ -1,6 +1,7 @@
 ---
 description: Spec Growth — implements ONE change from a precise brief (allowed files, goal per requirement). Writes code and tests only; never metadata, never commits.
 mode: subagent
+steps: 40
 permissions:
   - action: edit
     resource: "*"
@@ -59,3 +60,5 @@ Change id and branch · the goal **per requirement** · the **allowed files** (`
 - **Test command you ran** + its actual result.
 - **Skipped / not done**, and why (the parent reports this to the human).
 - **Files outside the brief** you believe must change — named, untouched.
+
+**Single-shot**: call your tools, read the output, answer. Never narrate waiting and never restate the plan — if a tool fails, report it in one line and stop.

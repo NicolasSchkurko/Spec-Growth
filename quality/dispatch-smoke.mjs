@@ -28,7 +28,7 @@ const CLI =
   "C:\\Users\\Luzbelito-WrkLp\\AppData\\Local\\Programs\\@opencodedesktop\\resources\\opencode-cli.exe";
 const MODEL = process.env.SMOKE_MODEL || "opencode/glm-5.3-flash-free";
 
-function runPrompt(cwd, prompt, timeoutMs = 240000) {
+function runPrompt(cwd, prompt, timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS || 420000)) {
   return new Promise((resolve) => {
     let child;
     try {
