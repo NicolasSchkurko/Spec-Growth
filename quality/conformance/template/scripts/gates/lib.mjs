@@ -293,6 +293,52 @@ export function listArchive(root) {
   return { archived, digests, digestIds };
 }
 
+// Declared dependency graph (change -> deps); archived deps count as resolved.
+// Shared by BOARD.md and `/spec-deps-graph` (`build-graph.mjs`) so the two views
+// cannot drift. `edges` feed board.json; `mermaid` is the graph body without
+// the fences (or "" when no change declares deps).
+export function dependencyGraph(changes, { archived = [], digestIds = [] } = {}) {
+  const byId = new Map(changes.map((c) => [c.id, c]));
+  const restIdOf = (name) => String(name).replace(/^\d{4}-\d{2}-\d{2}-/, "");
+  const resolves = (dep) => archived.some((a) => restIdOf(a) === dep) || digestIds.includes(dep);
+  const nodes = new Set();
+  const edges = [];
+  for (const c of changes) {
+    for (const d of c.deps) {
+      const dep = String(d);
+      nodes.add(c.id);
+      nodes.add(dep);
+      const target = byId.get(dep);
+      edges.push({ from: dep, to: c.id, verified: target ? target.status === "verified" : resolves(dep) ? true : null });
+    }
+  }
+  const slug = (s) => String(s).replace(/[^A-Za-z0-9_]/g, "_");
+  const lines = [];
+  for (const id of [...nodes].sort((a, b) => a.localeCompare(b))) {
+    const c = byId.get(id);
+    const resolved = !c && resolves(id);
+    const cls = c
+      ? ["draft", "accepted", "applying", "verified"].includes(c.status)
+        ? c.status
+        : "other"
+      : resolved
+        ? "archived"
+        : "other";
+    lines.push(`  ${slug(id)}["${id}${c ? ` (${c.status})` : resolved ? " (archived)" : " (unknown)"}"]:::${cls}`);
+  }
+  for (const e of edges) {
+    const lbl = e.verified === false ? "|unverified|" : e.verified === null ? "|unknown|" : "";
+    lines.push(`  ${slug(e.from)} -->${lbl} ${slug(e.to)}`);
+  }
+  lines.push("  classDef draft fill:#f2f2f2,stroke:#999,color:#333;");
+  lines.push("  classDef accepted fill:#fff8dd,stroke:#ccaa00,color:#333;");
+  lines.push("  classDef applying fill:#e8f0ff,stroke:#4477cc,color:#333;");
+  lines.push("  classDef verified fill:#e8ffe8,stroke:#33aa33,color:#333;");
+  lines.push("  classDef archived fill:#eef2f7,stroke:#8899aa,color:#333;");
+  lines.push("  classDef other fill:#ffe8e8,stroke:#cc4444,color:#333;");
+  return { nodes, edges, mermaid: nodes.size ? `graph LR\n${lines.join("\n")}\n` : "" };
+}
+
 // All files inside a directory (recursive), same exclusions as walkFiles.
 export function walkAll(dir, depth = 0) {
   if (!existsSync(dir) || depth > WALK_MAX_DEPTH) return [];
@@ -364,7 +410,7 @@ export function readConfig(root, errors = null) {
   const protectedZones = arr(cfg.protected)
     .map((z) => (typeof z === "string" ? { glob: z, reason: "" } : z))
     .filter((z) => z && z.glob);
-  return { protectedZones, testCommand: cfg.test_command || null };
+  return { protectedZones, testCommand: cfg.test_command || null, testCommandScope: cfg.test_command_scope || null };
 }
 
 // A capability is the owning spec folder (`openspec/specs/<capability>/spec.md`)

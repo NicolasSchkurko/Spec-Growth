@@ -7,7 +7,10 @@
 //   findings · tasks · tech brief (walkthrough + sign-off) · protected zones (targets + real files + ADR) · capabilities
 //   (case-insensitive) · requirements/citations · deps · archive · suite · evidence
 //   (substituted ≠ green) · --pre-archive · --scope.
-// Modes: [--root DIR] [--json] [--run-tests] [--tests-command "CMD"] [--pre-archive ID] [--diff BASE] [--scope ID]
+// Modes: [--root DIR] [--json] [--run-tests] [--tests-of ID] [--tests-command "CMD"] [--pre-archive ID] [--diff BASE] [--scope ID]
+// Green evidence comes only from --run-tests. --tests-of runs the change's declared
+// tests through config `test_command_scope` (placeholders {tests} / {classes}) for
+// fast feedback, and never produces green.
 // Exit: 1 if there are errors, 0 otherwise. Writes openspec/evidence.json.
 import { join, normalize, relative } from "node:path";
 import { existsSync, readdirSync, statSync } from "node:fs";
@@ -24,7 +27,8 @@ const getVal = (n) => {
 };
 const asJson = args.includes("--json");
 const explicitCmd = getVal("--tests-command");
-const wantTests = args.includes("--run-tests") || Boolean(explicitCmd);
+const testsOfId = getVal("--tests-of");
+const wantTests = args.includes("--run-tests") || Boolean(explicitCmd) || Boolean(testsOfId);
 const preArchiveId = getVal("--pre-archive");
 const diffBase = getVal("--diff");
 const scopeId = getVal("--scope");
@@ -686,21 +690,79 @@ for (const c of changes) {
   }
 }
 
-// 15) test suite (optional; --tests-command does NOT produce green — see evidence)
+// 15) test suite (optional). Green evidence comes ONLY from the full run:
+//     --tests-command is substituted, --tests-of is scoped. Neither can produce green.
 let testsRecord = null;
 const substituted = Boolean(explicitCmd);
+const scoped = Boolean(testsOfId);
 if (wantTests) {
-  if (explicitCmd && process.env.CI) {
+  let effectiveCmd = testsCmd;
+  let blocked = false;
+  if (scoped && args.includes("--run-tests")) {
+    err("--tests-of and --run-tests are mutually exclusive: the scoped run is fast feedback, the full run is evidence");
+    blocked = true;
+  }
+  if (scoped) {
+    const c = changes.find((x) => x.id === testsOfId);
+    if (!c) {
+      err(`--tests-of: change '${testsOfId}' does not exist`);
+      blocked = true;
+    } else if (!cfg.testCommandScope) {
+      err(
+        '--tests-of requires openspec/config.yaml: test_command_scope — e.g. "node --test {tests}" or "./gradlew test --tests {classes}"'
+      );
+      blocked = true;
+    } else if (!c.tests.length) {
+      warn(`--tests-of ${c.id}: no tests declared in .openspec.yaml — nothing to scope`);
+      blocked = true;
+    } else {
+      // Paths come from repo metadata (data, never instructions): refuse anything that
+      // could break out of the shell, then quote what remains.
+      const unsafe = c.tests.filter((p) => !/^[A-Za-z0-9._/\- ]+$/.test(p));
+      if (unsafe.length) {
+        err(`--tests-of ${c.id}: test path with unsafe characters — ${unsafe.join(", ")}`);
+        blocked = true;
+      } else {
+        // `{classes}` is a unit-test filter (Gradle/pytest-style): instrumented paths
+        // (…/src/androidTest/…) are not covered by it and belong to the full run.
+        const usesClasses = /\{classes\}/.test(cfg.testCommandScope);
+        const unit = usesClasses ? c.tests.filter((p) => /\/src\/test\//.test(p)) : c.tests;
+        const instrumented = c.tests.length - unit.length;
+        if (usesClasses && !unit.length) {
+          warn(
+            `--tests-of ${c.id}: only instrumented tests declared — '{classes}' covers src/test, not src/androidTest. Run --run-tests for the full suite.`
+          );
+          blocked = true;
+        } else {
+          if (usesClasses && instrumented) {
+            warn(`--tests-of ${c.id}: ${instrumented} instrumented test(s) are not covered by the scoped run (full suite only)`);
+          }
+          const quoted = unit.map((p) => `"${p}"`).join(" ");
+          const classes = unit
+            .map((p) => {
+              const m = p.match(/\/src\/(?:test|androidTest)\/(?:java|kotlin)\/(.+)\.(?:kt|java)$/i);
+              return m ? m[1].replace(/\//g, ".") : p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+            })
+            .map((k) => `"${k}"`)
+            .join(" ");
+          effectiveCmd = cfg.testCommandScope.replace(/\{tests\}/g, quoted).replace(/\{classes\}/g, classes);
+        }
+      }
+    }
+  }
+  if (blocked) {
+    /* report above */
+  } else if (explicitCmd && process.env.CI) {
     err("--tests-command forbidden in CI — use test_command (config) with --run-tests");
-  } else if (!testsCmd) {
+  } else if (!effectiveCmd) {
     warn("--run-tests without test_command configured (openspec/config.yaml: test_command)");
-  } else if (/[;|&`$<>]/.test(testsCmd) && process.env.SPEC_GROWTH_ALLOW_SHELL_CMD !== "1") {
-    err(`test_command with metacharacters requires SPEC_GROWTH_ALLOW_SHELL_CMD=1 — ${testsCmd}`);
+  } else if (/[;|&`$<>]/.test(scoped ? cfg.testCommandScope : effectiveCmd) && process.env.SPEC_GROWTH_ALLOW_SHELL_CMD !== "1") {
+    err(`test_command with metacharacters requires SPEC_GROWTH_ALLOW_SHELL_CMD=1 — ${scoped ? cfg.testCommandScope : effectiveCmd}`);
   } else {
     let exit = 0;
     let tail = "";
     try {
-      const out = execSync(testsCmd, {
+      const out = execSync(effectiveCmd, {
         cwd: root,
         stdio: ["ignore", "pipe", "pipe"],
         shell: true,
@@ -717,9 +779,9 @@ if (wantTests) {
         tail = (e && e.stdout ? e.stdout.toString() : "") + (e && e.stderr ? e.stderr.toString() : "");
       }
     }
-    testsRecord = { command: testsCmd, exit, substituted };
+    testsRecord = { command: effectiveCmd, exit, substituted, scoped };
     if (exit !== 0) {
-      err(`test suite RED — ${testsCmd}`); // global: not degradable by --scope
+      err(`test suite RED — ${effectiveCmd}`); // global: not degradable by --scope
       const lines = tail.split(/\r?\n/).filter(Boolean);
       const last = lines.slice(-15).join("\n");
       if (last) warnings.push({ msg: `last lines of the suite:\n${last}`, ids: [] });
@@ -775,7 +837,7 @@ function evidenceStaleReason(c, green) {
 function mergedGreen(c) {
   const prevGreen =
     (prevEvidence && prevEvidence.changes && prevEvidence.changes[c.id] && prevEvidence.changes[c.id].green_tests) || null;
-  const freshOk = testsRecord && !testsRecord.substituted && testsRecord.exit === 0 && currentOk(c);
+  const freshOk = testsRecord && !testsRecord.substituted && !testsRecord.scoped && testsRecord.exit === 0 && currentOk(c);
   if (freshOk) {
     const fp = currentFp(c);
     if (prevGreen && fp && prevGreen.files_hash === fp) return prevGreen;
@@ -906,7 +968,7 @@ const changesEv = {};
 for (const c of changes) {
   const prevRec = (prevEvidence && prevEvidence.changes && prevEvidence.changes[c.id]) || {};
   changesEv[c.id] = {
-    last: { at: now, ok: currentOk(c), mode: testsRecord ? "tests" : "static", status: c.status },
+    last: { at: now, ok: currentOk(c), mode: testsRecord ? (testsRecord.scoped ? "tests-scoped" : "tests") : "static", status: c.status },
     green_tests: mergedGreen(c) || prevRec.green_tests || null,
   };
 }
@@ -914,11 +976,12 @@ const evidence = {
   generated_at: now,
   gate_ok: errors.length === 0,
   scope: scopeId || null,
-  mode: testsRecord ? (testsRecord.substituted ? "tests-substituted" : "tests") : "static",
+  mode: testsRecord ? (testsRecord.substituted ? "tests-substituted" : testsRecord.scoped ? "tests-scoped" : "tests") : "static",
   tests: testsRecord,
   changes: changesEv,
 };
-lib.writeEvidence(root, evidence);
+// A scoped run is fast feedback, not a record: it writes nothing (no green, no `last` churn).
+if (!testsRecord?.scoped) lib.writeEvidence(root, evidence);
 
 // scope: affects ONLY the report and exit; evidence and gate_ok were computed UNFILTERED
 if (scopeId) {
@@ -950,8 +1013,19 @@ if (asJson) {
 } else {
   console.log(`Spec Growth · gate-check (${evidence.mode})${scopeId ? ` · scope: ${scopeId}` : ""} — ${changes.length} active change(s)`);
   console.log(`Errors: ${errors.length} · Warnings: ${warnings.length}\n`);
+  if (testsRecord?.scoped) {
+    console.log("Scoped run: fast feedback only. It records NO green evidence — run --run-tests before verified or --pre-archive.\n");
+  }
   if (errorMsgs.length) console.log(errorMsgs.map((e) => `  ✖ ${e}`).join("\n") + "\n");
-  if (warnMsgs.length) console.log(warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  // stdout diet: warnings are detail, not signal. Cap at 5 here; the full list lives
+  // in openspec/last-gate-report.txt (gating loops fatten the parent's context).
+  if (warnMsgs.length > 5) {
+    console.log(warnMsgs.slice(0, 5).map((w) => `  ⚠ ${w}`).join("\n"));
+    console.log(`  … ${warnMsgs.length - 5} more warnings — full report: openspec/last-gate-report.txt\n`);
+    lib.writeAtomic(join(root, "openspec", "last-gate-report.txt"), warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  } else if (warnMsgs.length) {
+    console.log(warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  }
   if (preArchiveResult) {
     console.log(
       preArchiveResult.ok
