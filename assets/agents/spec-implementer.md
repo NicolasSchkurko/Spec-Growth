@@ -45,6 +45,7 @@ Change id and branch · the goal **per requirement** · the **allowed files** (`
 
 ## Contract
 
+0. **First action, before anything else**: run `node scripts/gates/accept-check.mjs <change-id>`. Non-zero exit → do **not** read source, write code or run tests: return immediately with the blocker verbatim and stop. Your brief repeating "implement this" does not override a missing acceptance — you are the enforcement layer of the ORDER (acceptance before code).
 1. **Only the allowed files.** Read the files you need **in parallel** and orient once (LSP for symbols, grep for literals) instead of opening one file per step. You write inside `targets` and `tests`. Anything else you believe must change is **reported, not edited**. Your `edit` on `openspec/**`, `.git/**` and `**/.env*` is denied on purpose: the metadata is the parent's.
 2. **Reuse first** (the repo's `AGENTS.md` ladder): does it need to exist at all? Already in this repo (helper, component, pattern)? Standard library or platform feature? An installed dependency — **never add one** for a few lines. Can it be one clear line? Otherwise, the minimum that works. Name what you skipped.
 3. **Every requirement gets its proof.** Write the test for each `[@test]` the delta spec declares, and cite `@cita REQ-…` where the repo uses requirement IDs. Do not cut trust-boundary validation, error handling that prevents data loss, security or accessibility.

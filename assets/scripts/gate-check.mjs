@@ -1017,7 +1017,15 @@ if (asJson) {
     console.log("Scoped run: fast feedback only. It records NO green evidence — run --run-tests before verified or --pre-archive.\n");
   }
   if (errorMsgs.length) console.log(errorMsgs.map((e) => `  ✖ ${e}`).join("\n") + "\n");
-  if (warnMsgs.length) console.log(warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  // stdout diet: warnings are detail, not signal. Cap at 5 here; the full list lives
+  // in openspec/last-gate-report.txt (gating loops fatten the parent's context).
+  if (warnMsgs.length > 5) {
+    console.log(warnMsgs.slice(0, 5).map((w) => `  ⚠ ${w}`).join("\n"));
+    console.log(`  … ${warnMsgs.length - 5} more warnings — full report: openspec/last-gate-report.txt\n`);
+    lib.writeAtomic(join(root, "openspec", "last-gate-report.txt"), warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  } else if (warnMsgs.length) {
+    console.log(warnMsgs.map((w) => `  ⚠ ${w}`).join("\n") + "\n");
+  }
   if (preArchiveResult) {
     console.log(
       preArchiveResult.ok

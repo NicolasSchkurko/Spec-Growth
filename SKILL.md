@@ -58,9 +58,9 @@ Simple, mechanical work runs in a **background subagent on a free model** (`open
 
 ## Safety & scope
 
-- **What this skill runs**: Node scripts from `scripts/gates/` (gate, board, graph, compact, map), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
-- **What it never does**: exfiltrate repository or conversation data; auto-grant approvals, waivers or comprehension sign-offs (human-only); delete uncommitted work (`compact-archive` requires a clean, committed folder).
-- **Human-in-the-loop**: protected zones need `human_approved` + a `DECISIONS.md` entry; waivers need a human grant; archiving needs `--pre-archive` OK.
+- **What this skill runs**: Node scripts from `scripts/gates/` (gate, accept-check — the ORDER gate, board, graph, compact, map, doctor), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
+- **What it never does**: exfiltrate repository or conversation data; auto-grant approvals, waivers or comprehension sign-offs (human-only); delete uncommitted work (`compact-archive` requires a clean, committed folder); **write code for a change the human has not accepted** — `node scripts/gates/accept-check.mjs <id>` must exit 0 first, and `spec-implementer` runs it as its own first action.
+- **Human-in-the-loop**: protected zones need `human_approved` + a `DECISIONS.md` entry; waivers need a human grant; archiving needs `--pre-archive` OK; code starts only after acceptance (`accepted_by`/`accepted_at`), verified mechanically by `accept-check` — prompt discipline alone does not survive user pressure (eval `t2-quickfix`, pass^k).
 - **Runtime permissions** live in OpenCode's agent configuration (`agents.<id>.permissions`), not in this file — the skill declares intent; the runtime enforces the ceiling. INIT installs optional MCPs only when missing, pinned to a reviewed version.
 
 ## Operations

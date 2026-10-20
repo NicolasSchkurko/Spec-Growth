@@ -9,7 +9,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -264,6 +264,94 @@ test("--tests-of refuses a test path with shell characters", () => {
   const r = gate(root, ["--tests-of", "demo"]);
   assert.equal(r.code, 1);
   assert.match(r.out, /unsafe characters/i);
+});
+
+// --- order enforcement (accept-check) ---
+
+test("accept-check: blocks a draft change, with the right blocker", () => {
+  const root = fixture((d) => addChange(d, "demo", { status: "draft" }));
+  const r = run("accept-check.mjs", root, ["demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /BLOCKED: change 'demo' is still draft/);
+});
+
+test("accept-check: draft + tech brief names the missing teach-back", () => {
+  const root = fixture((d) => addChange(d, "demo", { status: "draft", tech_brief: "true" }));
+  const r = run("accept-check.mjs", root, ["demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /teach-back sign-off/);
+});
+
+test("accept-check: blocks accepted-status code with no record of who accepted", () => {
+  const root = fixture((d) => addChange(d, "demo", { status: "applying", accepted_by: null, accepted_at: null }));
+  const r = run("accept-check.mjs", root, ["demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /no acceptance on record/);
+});
+
+test("accept-check: passes a change with acceptance on record", () => {
+  const root = fixture((d) => addChange(d, "demo", { status: "accepted", accepted_by: "Nschkurko", accepted_at: "2026-10-20" }));
+  const r = run("accept-check.mjs", root, ["demo"]);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /OK demo: acceptance on record/);
+});
+
+// --- stdout diet (warnings capped, detail to file) ---
+
+test("gate-check caps warnings on stdout and writes the full report to a file", () => {
+  const root = fixture((d) => {
+    // 6 changes sharing one target -> 15 overlap warnings (> 5) in one deterministic shot
+    for (let i = 0; i < 6; i++) addChange(d, `c${i}`, { targets: "[src/notes.js]" });
+  });
+  const r = gate(root, ["--scope", "c0"]);
+  assert.match(r.out, /more warnings — full report: openspec\/last-gate-report\.txt/);
+  const report = join(root, "openspec", "last-gate-report.txt");
+  assert.ok(existsSync(report), "full report file missing");
+  assert.ok(readFileSync(report, "utf8").split("\n").filter((l) => l.startsWith("  ⚠")).length >= 15);
+  // stdout keeps only 5
+  assert.ok(r.out.split("\n").filter((l) => l.trim().startsWith("⚠")).length <= 5);
+});
+
+// --- environment preflight ---
+
+test("doctor: exits 0 in this environment and reports each layer", () => {
+  const r = run("doctor.mjs", HERE);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /git present/);
+  assert.match(r.out, /node v\d+/);
+  assert.match(r.out, /DOCTOR: OK/);
+});
+
+// --- encoding hygiene (the mojibake baseline was an artifact of a CP1252 reader;
+//     this gate keeps it true: UTF-8 no BOM, no U+FFFD, no double-encoded pairs) ---
+
+test("source files are UTF-8-clean (no BOM, no U+FFFD, no CP1252 pairs)", () => {
+  const bad = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      if (e.name === ".git" || e.name === "node_modules") continue;
+      const p = join(d, e.name);
+      if (e.isDirectory()) {
+        if (p !== join(HERE, "conformance", "runs")) walk(p); // run copies are fixtures, not sources
+        continue;
+      }
+      if (!/\.(md|mjs|json|ya?ml|mmd)$/i.test(e.name)) continue;
+      const b = readFileSync(p);
+      const s = b.toString("utf8");
+      if (b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) bad.push(`${p}: BOM`);
+      if (s.includes("\uFFFD")) bad.push(`${p}: U+FFFD`);
+      for (let i = 0; i < s.length - 1; i++) {
+        const c = s.charCodeAt(i);
+        const n = s.charCodeAt(i + 1);
+        if ((c === 0xc3 || c === 0xc2) && n >= 0x80 && n <= 0xbf) {
+          bad.push(`${p}: double-encoded (Ã/Â followed by a latin-1 byte)`);
+          break;
+        }
+      }
+    }
+  };
+  walk(join(HERE, ".."));
+  assert.deepEqual(bad, []);
 });
 
 // --- generated views ---
