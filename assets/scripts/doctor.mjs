@@ -32,7 +32,7 @@ const nodeVer = process.version;
 const nodeMajor = Number(nodeVer.slice(1).split(".")[0]);
 if (nodeMajor >= 18) add("ok", `node ${nodeVer}`);
 else {
-  add("fail", `node ${nodeVer} — Spec Growth needs node >= 18`, "install a current LTS node (https://nodejs.org)");
+  add("fail", `node ${nodeVer} — Spec Growth needs node >= 18`, "install a current LTS node (nodejs.org → download or your package manager)");
   fail();
 }
 
