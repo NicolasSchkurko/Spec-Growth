@@ -4,6 +4,14 @@ schema: spec-anchored
 # Examples: "./gradlew test" (Linux/macOS) · "gradlew.bat test" (Windows) · "npm test" · "pytest -q"
 # test_command: ""
 
+# Optional: same suite, narrowed to one change's declared tests, for fast feedback.
+# `gate-check --tests-of <id>` runs it and records NO green evidence (only `--run-tests` does).
+# Placeholders: {tests} = the quoted test paths · {classes} = derived JVM class names
+# (app/src/test/java/com/x/YTest.kt -> com.x.YTest).
+# Examples:
+# test_command_scope: "node --test {tests}"
+# test_command_scope: "./gradlew test --tests {classes}"
+
 context: |
   <!-- Fill in: project stack, conventions and how to run the tests -->
 

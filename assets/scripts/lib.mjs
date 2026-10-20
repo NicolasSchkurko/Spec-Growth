@@ -410,7 +410,7 @@ export function readConfig(root, errors = null) {
   const protectedZones = arr(cfg.protected)
     .map((z) => (typeof z === "string" ? { glob: z, reason: "" } : z))
     .filter((z) => z && z.glob);
-  return { protectedZones, testCommand: cfg.test_command || null };
+  return { protectedZones, testCommand: cfg.test_command || null, testCommandScope: cfg.test_command_scope || null };
 }
 
 // A capability is the owning spec folder (`openspec/specs/<capability>/spec.md`)

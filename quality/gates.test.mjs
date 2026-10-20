@@ -201,6 +201,61 @@ test("--pre-archive without green evidence is BLOCKED", () => {
   assert.match(r.out, /PRE-ARCHIVE demo: BLOCKED/);
 });
 
+// --- scoped tests (--tests-of) ---
+
+function setScope(root, cmd) {
+  const file = join(root, "openspec", "config.yaml");
+  writeFileSync(file, `${readFileSync(file, "utf8")}\ntest_command_scope: "${cmd}"\n`);
+}
+
+test("--tests-of runs only the change's tests, records no green and writes no evidence", () => {
+  const root = fixture((d) => {
+    addChange(d);
+    setScope(d, "node --test {tests}");
+  });
+  const r = gate(root, ["--tests-of", "demo"]);
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /tests-scoped/);
+  assert.match(r.out, /Scoped run/i);
+  assert.ok(!existsSync(join(root, "openspec", "evidence.json")), "a scoped run must not write evidence");
+});
+
+test("--tests-of without test_command_scope is an error", () => {
+  const r = gate(fixture((d) => addChange(d)), ["--tests-of", "demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /test_command_scope/);
+});
+
+test("a scoped run never satisfies verified", () => {
+  const root = fixture((d) => {
+    addChange(d, "demo", { status: "verified" });
+    setScope(d, "node --test {tests}");
+  });
+  const r = gate(root, ["--tests-of", "demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /without local green evidence/i);
+});
+
+test("--tests-of and --run-tests are mutually exclusive", () => {
+  const root = fixture((d) => {
+    addChange(d);
+    setScope(d, "node --test {tests}");
+  });
+  const r = gate(root, ["--tests-of", "demo", "--run-tests"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /mutually exclusive/i);
+});
+
+test("--tests-of refuses a test path with shell characters", () => {
+  const root = fixture((d) => {
+    addChange(d, "demo", { tests: '[tests/notes.test.mjs; rm -rf /]' });
+    setScope(d, "node --test {tests}");
+  });
+  const r = gate(root, ["--tests-of", "demo"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /unsafe characters/i);
+});
+
 // --- generated views ---
 
 test("build-board generates BOARD.md and board.json", () => {
