@@ -246,6 +246,16 @@ test("--tests-of and --run-tests are mutually exclusive", () => {
   assert.match(r.out, /mutually exclusive/i);
 });
 
+test("--tests-of with only instrumented tests warns instead of running the wrong runner", () => {
+  const root = fixture((d) => {
+    addChange(d, "demo", { tests: "[app/src/androidTest/java/com/x/OnlyTest.kt]" });
+    setScope(d, "./gradlew test --tests {classes}");
+  });
+  const r = gate(root, ["--tests-of", "demo"]);
+  assert.match(r.out, /only instrumented tests/i);
+  assert.doesNotMatch(r.out, /tests-scoped/);
+});
+
 test("--tests-of refuses a test path with shell characters", () => {
   const root = fixture((d) => {
     addChange(d, "demo", { tests: '[tests/notes.test.mjs; rm -rf /]' });

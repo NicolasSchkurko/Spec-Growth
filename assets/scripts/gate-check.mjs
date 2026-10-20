@@ -723,15 +723,30 @@ if (wantTests) {
         err(`--tests-of ${c.id}: test path with unsafe characters — ${unsafe.join(", ")}`);
         blocked = true;
       } else {
-        const quoted = c.tests.map((p) => `"${p}"`).join(" ");
-        const classes = c.tests
-          .map((p) => {
-            const m = p.match(/\/src\/(?:test|androidTest)\/(?:java|kotlin)\/(.+)\.(?:kt|java)$/i);
-            return m ? m[1].replace(/\//g, ".") : p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
-          })
-          .map((k) => `"${k}"`)
-          .join(" ");
-        effectiveCmd = cfg.testCommandScope.replace(/\{tests\}/g, quoted).replace(/\{classes\}/g, classes);
+        // `{classes}` is a unit-test filter (Gradle/pytest-style): instrumented paths
+        // (…/src/androidTest/…) are not covered by it and belong to the full run.
+        const usesClasses = /\{classes\}/.test(cfg.testCommandScope);
+        const unit = usesClasses ? c.tests.filter((p) => /\/src\/test\//.test(p)) : c.tests;
+        const instrumented = c.tests.length - unit.length;
+        if (usesClasses && !unit.length) {
+          warn(
+            `--tests-of ${c.id}: only instrumented tests declared — '{classes}' covers src/test, not src/androidTest. Run --run-tests for the full suite.`
+          );
+          blocked = true;
+        } else {
+          if (usesClasses && instrumented) {
+            warn(`--tests-of ${c.id}: ${instrumented} instrumented test(s) are not covered by the scoped run (full suite only)`);
+          }
+          const quoted = unit.map((p) => `"${p}"`).join(" ");
+          const classes = unit
+            .map((p) => {
+              const m = p.match(/\/src\/(?:test|androidTest)\/(?:java|kotlin)\/(.+)\.(?:kt|java)$/i);
+              return m ? m[1].replace(/\//g, ".") : p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+            })
+            .map((k) => `"${k}"`)
+            .join(" ");
+          effectiveCmd = cfg.testCommandScope.replace(/\{tests\}/g, quoted).replace(/\{classes\}/g, classes);
+        }
       }
     }
   }
