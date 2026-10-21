@@ -39,6 +39,10 @@
   - **MEDIUM — structural automation is not behavioral validation.** The gate checks states, tasks, references, deps, conflicts and evidence; CI runs the JVM suite and ktlint. Neither proves the system detects real regressions — Android accessibility overlays, lifecycle and device-specific behavior need instrumented tests or on-device validation. The real evidence bar is "a real regression is caught", not "files were found and commands ran".
   - **Process-ceremony risk.** A very high commit count (accept/verify/archive/sign-off commits) can be mistaken for effectiveness. The ceremonial trail is an audit artifact, not proof the process works; the evidence is a green suite plus real regressions caught. Keep the audit trail proportionate to the change.
 
+- **Additional known limits (2026-10-21).** Recorded here, not as a new doc:
+  - **Comprehension validation is skippable.** The walkthrough's three questions and the teach-back are conversational; the gate only checks that the walkthrough exists, is complete and that the `understood_by`/`understood_at` keys are set. Nothing proves understanding happened — the keys can be written (by an agent or a rushed human) without the interactive recall. The real mechanism is the conversational teach-back in `/spec-verify` (free recall, code-cited validation); keep it interactive and never reduce it to a checkbox session.
+  - **One change per apply is a convention, not a barrier.** `AGENTS.md` says "one apply = one branch = one change", but nothing mechanical prevents running several changes in flight on the same branch and archiving them together. That defeats per-change evidence tracking, `gitref` verification and comprehension sign-off, and it is the easiest way to make the audit trail look correct while the work is not. The compensating control today is the human keeping applies disjoint; a mechanical control would require a branch/lock invariant in the gate.
+
 > This document is a claim: if a script changes, this section is updated.
 
 ## Assumptions to verify (spike)
