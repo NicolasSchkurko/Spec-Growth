@@ -6,6 +6,8 @@ Specs are the living contract of the present; changes are the future in flight; 
 
 The system exists for two failure modes of AI-assisted development: agents lose quality as their context fills up, and specs drift silently away from the code. Its answer: every behavior change travels through a change folder with machine-readable metadata, and the invariants live in a deterministic gate — not in prose an agent can forget.
 
+> **Conclusions and limitations (v1.6)** — brief: Spec Growth is a promising companion method, not a proven general approach; it makes decisions, changes and verification conditions explicit rather than eliminating errors; its main pending limitation is that it checks spec/code agreement, not real behavioral correctness or the developer's comprehension. [Full conclusions → `docs/conclusions.md`](docs/conclusions.md)
+
 ## Quickstart
 
 **Prerequisites:** Node ≥ 20.19 · git · the OpenSpec CLI (`@fission-ai/openspec`) · OpenCode.
@@ -22,7 +24,7 @@ Windows (PowerShell):
 git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.config\opencode\skills\spec-growth"
 ```
 
-**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and regenerates the BOARD.
+**2. Bootstrap a repository:** open any git repository in OpenCode and say **"Start Spec Growth"**. The INIT checks the preconditions, installs or verifies OpenSpec, adds the missing MCPs (`codebase-memory`, Structurizr — only the absent ones), lays down the scaffold (`AGENTS.md`, `openspec/config.yaml`, the gate scripts, the pre-commit hook), copies the nine commands and the eight agents, and regenerates the BOARD.
 
 **3. Create your first change:** `/spec-add "<idea>"` → review and accept → `/spec-apply` → `/spec-verify` → merge → archive. The full walkthrough: [Workflows](docs/workflows.md).
 
@@ -32,11 +34,11 @@ git clone https://github.com/NicolasSchkurko/Spec-Growth.git "$env:USERPROFILE\.
 |---|---|
 | `/spec-add` | Draft a change: proposal, delta spec, metadata, alternatives. No code |
 | `/spec-triage` | Bug or discrepancy → you decide which side is right → fix change with a regression test |
-| `/spec-apply` | Implement one change on its branch: tests + green evidence; writes the tech brief; asks for zone approvals |
-| `/spec-verify` | Gate + adversarial semantic pass + teach-back for tech briefs (records your sign-off) |
+| `/spec-apply` | Implement one change on its branch: tests + green evidence; the gate and the tech brief run in parallel child sessions |
+| `/spec-verify` | Gate + parallel per-change semantic audit + teach-back for tech briefs (records your sign-off) |
 | `/spec-explain` | Explain existing behavior with real `file:line` traces; proposes a refactor when the code is opaque |
 | `/spec-gate` | Measure and record — static by default, `--run-tests` for evidence. Fixes nothing |
-| `/spec-deps-graph` | What is not archived: the declared-deps graph + one line on what each living spec and change in flight does (read-only) |
+| `/spec-deps-graph` | What is not archived: the declared-deps graph + one line on what each living spec and change in flight does (read-only, free background model) |
 | `/spec-resolve` | Walk through what awaits the human: approvals, decisions, conflicts, waivers |
 | `/diagram-sync` | Diff the C4 model (`ARCHITECTURE.dsl`) against code and IaC |
 
@@ -49,6 +51,7 @@ The `bug-finder` skill runs alongside in **anchored mode**: it audits against th
 - **Risky changes carry a tech brief:** persistence/state, concurrency, networking, platform SDKs, security or a new dependency → a plain-language `walkthrough.md` and a 3-question teach-back before your sign-off.
 - **Deviations block closure:** waivers, open decisions and conflicts stay pending until the human resolves them, and every resolution lands in `DECISIONS.md`.
 - **The BOARD shows what awaits you.** Specs own behavior, `ARCHITECTURE.dsl` owns structure, `DECISIONS.md` owns the why.
+- **Heavy work runs in parallel, and the implementation runs fresh.** Six of the nine commands dispatch scoped child sessions: `/spec-add` and `/spec-triage` survey with `spec-recon` while you are still answering questions, `/spec-explain` traces with `spec-explainer`, `/spec-apply` hands the coding to a `spec-implementer` child with a precise brief (allowed files, goal per requirement) — a *fresh context by construction*, which is what the skill already asked for — and dispatches the test suite and the tech brief in parallel, and `/spec-verify` dispatches one read-only audit child per change — a *fresh context by construction*, which is what the skill already asked for.
 
 Details, diagrams and edge cases: [docs/](docs/README.md).
 
@@ -59,6 +62,7 @@ SKILL.md            the canonical spec (router: glossary, operations, rules)
 references/         INIT · scripts, flags & gate policy · implementation status & limits
 docs/               concepts · lifecycle · gates · workflows · FAQ · evidence · security
 assets/commands/    the nine commands copied into a repo by the INIT
+assets/agents/      the eight subagents (spec-implementer · spec-gate · spec-auditor · spec-walkthrough · spec-recon · spec-explainer · spec-deps-graph · diagram-sync)
 assets/scripts/     gate-check.mjs · build-board.mjs · build-graph.mjs · compact-archive.mjs · build-map.mjs · lib.mjs
 assets/scaffold/    AGENTS.md · config.yaml · pre-commit hook · schema patch
 quality/            the conformance suite and its recorded results
@@ -66,7 +70,16 @@ quality/            the conformance suite and its recorded results
 
 ## Status
 
-**v1.4** — adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](docs/evidence.md).
+**v1.5 prototype** (branch `experiment/fast-path`) — speeds up the slow commands: add/triage/apply/verify/explain dispatch their independent work (survey, implementation, test suite, per-change audit, tech brief, trace) to scoped child sessions and join the results, without relaxing the gate, the evidence or any human-only record. **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](references/evidence.md).
+
+## Tests
+
+```bash
+node --test quality/gates.test.mjs     # gate scripts: invariants, evidence, generated views (offline, ~5 s)
+node quality/dispatch-smoke.mjs        # V2 wiring against the real CLI (free model, ~2 min)
+```
+
+The conformance suite (`quality/conformance/`) is the expensive one — real agent runs with judges, ~20–40 min.
 
 ## License
 

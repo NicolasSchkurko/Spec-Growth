@@ -23,6 +23,8 @@ stateDiagram-v2
 
 There is no workflow engine: the transitions are what you do next, and the gate only validates the **invariants of the recorded state** — a `verified` without local green evidence is a warning, with pending decisions it is an error, and so on.
 
+The **child sessions** `/spec-apply` and `/spec-verify` dispatch (the gate, the per-change audit, the tech brief) never change a state and never record anything human-only: they read, and only `spec-walkthrough` writes inside the change folder. States, records and approvals are exactly as below.
+
 ## The approval circuit
 
 One rule covers every approval: **the human authorizes with an explicit sentence; the agent writes the record; the gate verifies the record.** Never the other way around, never by silence.
@@ -41,7 +43,7 @@ sequenceDiagram
     end
 ```
 
-You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which walks you through each pending item. Hand-editing works too, because the gate checks the record, not its author (a documented limit — the risky approvals are cross-checked against `DECISIONS.md`).
+You do not have to edit files by hand: say "approved" to the agent in any session, or run `/spec-resolve`, which asks every pending item in one round. Hand-editing works too, because the gate checks the record, not its author (a documented limit — the risky approvals are cross-checked against `DECISIONS.md`).
 
 ## What to record for each kind of approval
 

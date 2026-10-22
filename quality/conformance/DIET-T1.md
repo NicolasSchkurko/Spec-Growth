@@ -45,7 +45,7 @@
 2. **t4 judge false positive** (offering the sanctioned "you answer, I record" flow) → rubric clarified.
 3. **`t3.verified-honest` misread evidence semantics** (top-level `gate_ok` is last-run; the green record is `changes[id].green_tests`) → checker v1.1.2. Agents had actually done it right (including **fixing the fixture's broken `test_command` themselves** and flagging it to the human).
 4. **Fixture `test_command` broken on Node 24** (`node --test tests/`) → fixed (`node --test`).
-5. **Operator session hit ~104M cumulative tokens and the provider input limit** → subagent routing added to the restructure plan ([`RESTRUCTURE.md`](../RESTRUCTURE.md)).
+5. **Operator session hit ~104M cumulative tokens and the provider input limit** → subagent routing became part of the v1.2 restructure (recorded in [`references/status.md`](../../references/status.md) → v1.2).
 
 ## Verdict
 

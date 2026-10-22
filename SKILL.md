@@ -1,5 +1,6 @@
 ---
-name: Spec Growth
+name: spec-growth
+license: MIT
 description: 'Spec-anchored change management on OpenSpec — living specs, changes in flight, gates, evidence, decisions, comprehension. Use for any spec-driven workflow: bootstrap ("iniciar Spec Growth", "montar el sistema de specs", "Spec Growth Engine"), create/triage/apply/verify changes with tests and evidence, teach-back comprehension sign-off, gate, archive, resolve blockers, explain existing behavior, graph the specs and their declared deps, diagram sync (spec-add · spec-triage · spec-apply · spec-verify · spec-explain · spec-deps-graph · spec-gate · spec-resolve · diagram-sync).'
 ---
 
@@ -42,42 +43,46 @@ Bootstrap (**INIT**), the repo layout it leaves behind, schema, hooks and comman
 
 ## Model routing (v1.2)
 
-Simple, mechanical work runs in a **background subagent with a cheap model**; interactive and judgment work inherits the session model (assumption: the session model is your most capable one).
+Simple, mechanical work runs in a **background subagent on a free model** (`opencode/space-bunny-free`); the implementer runs on the session model and interactive/judgment work inherits it too (assumption: the session model is your most capable one).
 
 | Command | Where | Model |
 |---|---|---|
-| `/spec-gate` | background child (`subagent: true`) | `opencode-go/space-bunny` |
-| `/spec-deps-graph` | background child (`subagent: true`) | `opencode/space-bunny-free` |
-| `/diagram-sync` | background child (`subagent: true`) | `opencode-go/space-bunny` |
+| `/spec-gate` | background child (agent `spec-gate`) | inherited (no `model:` in agent) |
+| `/spec-deps-graph` | background child (agent `spec-deps-graph`) | inherited (no `model:` in agent) |
+| `/diagram-sync` | background child (agent `diagram-sync`) | inherited (no `model:` in agent) |
 | `/spec-resolve` · `/spec-verify` · `/spec-explain` | session (interactive) | inherited |
 | `/spec-add` · `/spec-triage` · `/spec-apply` | session (core work) | inherited |
 
-**How to change a model**: edit the YAML frontmatter of the command file — `.opencode/commands/spec-gate.md` (or `spec-deps-graph.md`, `diagram-sync.md`) — fields `model: provider/model#variant` and `subagent: true|false` (or route via another agent with `agent: <id>`). Commands reload automatically; no restart. Removing `model` falls back to the agent's model, then to the session model. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
+**Dispatched children (v1.5)**: six of the nine commands stay in the session (they own the approvals, the brief and the judgment) and launch **scoped children**: `spec-implementer` (writes the code + tests of one change from your brief), `spec-gate` (the suite + board), `spec-auditor` (one per active change, read-only), `spec-walkthrough` (writes the tech brief inside `openspec/changes/`), `spec-recon` (read-only survey: existing contracts, reuse, zones, overlaps, prior decisions), `spec-explainer` (read-only trace; may write only `docs/mechanisms/`). `/spec-gate`, `/spec-deps-graph` and `/diagram-sync` are thin commands that *are* a child (`agent: <id>` + `subagent: true`). Each child's no `model:` — they run on the **parent session's model**. All sub-agents inherit the session model; there is no paid/free mix. One caveat: a model that appears in `opencode models` may not answer (`Model unavailable`); use your session model responsibly. The model and the permissions live in the **agent file**: `.opencode/agents/` — `spec-implementer.md`, `spec-gate.md`, `spec-auditor.md`, `spec-walkthrough.md`, `spec-recon.md`, `spec-explainer.md`, `spec-deps-graph.md`, `diagram-sync.md` — no `model:` line. `model: provider/model#variant` plus a `permissions:` list (the auditor and the recon declare `edit`/`shell` denied; the explainer may write `docs/mechanisms/`). One caveat, measured: **this OpenCode build does not enforce agent `permissions`** — a denied edit still wrote a file in `quality/dispatch-smoke.mjs`. The read-only roles hold because their prompt says so **and** because the parent checks `git status` / `git diff` when they return; do not treat the permissions block as a sandbox. The command in `.opencode/commands/` only routes: `agent: <id>` + `subagent: true` (and a `model:` there overrides the agent's). One exception worth knowing: **`spec-implementer` declares no `model:` on purpose**, so it runs on **the same model as your session** — the code is the core work and you chose that model for it; do not pin it. Delete a `model` line on any other agent to make it inherit too. Commands and agents reload automatically, no restart. The interactive part of every command (`add`, `triage`, `apply`, `ve...
+
+**How to change a model**: edit the YAML frontmatter of the file that owns it — a command in `.opencode/commands/` (`model:` there overrides everything) or an agent in `.opencode/agents/` (`model: provider/model#variant`; removing it falls back to the session model). `subagent: true` on a command forces a background child; `agent: <id>` routes it through that agent. Commands and agents reload automatically; no restart. Background children return only their result (no context pollution); if a child fails, retry or run the command in-session.
 
 ## Safety & scope
 
-- **What this skill runs**: Node scripts from `scripts/gates/` (gate, board, graph, compact, map), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
-- **What it never does**: exfiltrate repository or conversation data; auto-grant approvals, waivers or comprehension sign-offs (human-only); delete uncommitted work (`compact-archive` requires a clean, committed folder).
-- **Human-in-the-loop**: protected zones need `human_approved` + a `DECISIONS.md` entry; waivers need a human grant; archiving needs `--pre-archive` OK.
+- **What this skill runs**: Node scripts from `scripts/gates/` (gate, accept-check — the ORDER gate, board, graph, compact, map, doctor), read-only `git` queries, and the declared `test_command`. No network calls, no credential access, no package installs at run time.
+- **What it never does**: exfiltrate repository or conversation data; auto-grant approvals, waivers or comprehension sign-offs (human-only); delete uncommitted work (`compact-archive` requires a clean, committed folder); **write code for a change the human has not accepted** — `node scripts/gates/accept-check.mjs <id>` must exit 0 first, and `spec-implementer` runs it as its own first action.
+- **Human-in-the-loop**: protected zones need `human_approved` + a `DECISIONS.md` entry; waivers need a human grant; archiving needs `--pre-archive` OK; code starts only after acceptance (`accepted_by`/`accepted_at`), verified mechanically by `accept-check` — prompt discipline alone does not survive user pressure (eval `t2-quickfix`, pass^k).
 - **Runtime permissions** live in OpenCode's agent configuration (`agents.<id>.permissions`), not in this file — the skill declares intent; the runtime enforces the ceiling. INIT installs optional MCPs only when missing, pinned to a reviewed version.
 
 ## Operations
 
 | Command | Role |
 |---|---|
-| `/spec-add` | Create a change (proposal + delta spec + metadata + `[REQ-…]` IDs), with **technical alternatives** (reuse / up to 3 options), **expected outcome** (feature/architecture), protected-zone warnings and decision requests. Does NOT write code |
-| `/spec-triage` | Bug/discrepancy → decide the side (human) → ADR + `kind: fix` change with a regression test |
-| `/spec-apply` | Apply ONE change on its branch with **clean context**: tests + gate (`--run-tests`) + `@cita` citations; `verified` only with green evidence. Protected zone → asks for your explicit approval |
-| `/spec-verify` | Mechanical gate + advisory semantic pass (drift, opacity) + **comprehension teach-back** for tech briefs: asks the 3 questions, validates your answers against the code, records the sign-off. Proposes **waivers** / **decision requests** / **conflicts** — never silence |
-| `/spec-explain` | Explain existing behavior: traces the real path (`file:line`), plain-language mechanism + Mermaid, anchors a mechanism note (`docs/mechanisms/`), proposes a `kind: refactor` when the code is opaque. Does not edit code |
+| `/spec-add` | Create a change (proposal + delta spec + metadata + `[REQ-…]` IDs), with **technical alternatives** (reuse / up to 3 options), **expected outcome** (feature/architecture), protected-zone warnings and decision requests. `spec-recon` surveys the repo **while you answer the one round of questions**. Does NOT write code |
+| `/spec-triage` | Bug/discrepancy → **both evidences in parallel** (`spec-explainer` traces the code, `spec-recon` finds the requirement) → decide the side (human) → ADR + `kind: fix` change with a regression test |
+| `/spec-apply` | Apply ONE change on its branch: the **implementation runs in a fresh `spec-implementer` child** from a precise brief (allowed files + goal per requirement), then tests + gate (`--run-tests`); `verified` only with green evidence. The gate and the tech brief run as parallel children. Risky changes (architecture, protected zone) are implemented in-session. Protected zone → asks for your explicit approval |
+| `/spec-verify` | Gate + **one read-only audit child per active change** (parallel) + **comprehension teach-back** for tech briefs: asks the 3 questions together, validates your answers against the code, records the sign-off. Proposes **waivers** / **decision requests** / **conflicts** — never silence |
+| `/spec-explain` | Explain existing behavior: `spec-explainer` traces the real path (`file:line`) in a fresh child, anchors the mechanism note (`docs/mechanisms/`); you verify the hops and deliver it in your own words. Proposes a `kind: refactor` when the code is opaque. Does not edit code |
 | `/spec-gate` | Measure and record: `gate-check` (static by default; `--run-tests` for CI/verified) + board. Fixes nothing |
 | `/spec-deps-graph` | What is **not archived**, at a glance: declared-deps Mermaid graph + one line per living capability and change in flight. Read-only |
-| `/spec-resolve` | Resolve what awaits the human: 🔒 approvals · ⏸ decisions · ⚔ conflicts · ⚠ `requested` waivers. Every resolution lands in `DECISIONS.md` |
+| `/spec-resolve` | Resolve what awaits the human: 🔒 approvals · ⏸ decisions · ⚔ conflicts · ⚠ `requested` waivers — **asked in one round**, not one by one. Every resolution lands in `DECISIONS.md` |
 | `/diagram-sync` | Diff `ARCHITECTURE.dsl` from code+IaC; capability tags (`cap:<capability>`); validated with Structurizr |
 
 **Resolving pendings**: `/spec-resolve` (or ask the agent conversationally) — the decision is always yours and no resolution counts without an ADR in `DECISIONS.md`. Comprehension sign-offs are not resolved there: they happen in `/spec-verify`, as the walkthrough teach-back.
 
-**Approvals — how they happen**: the human authorizes with an **explicit sentence** in the conversation; the agent **writes the record**; the gate **verifies the record** (never the other way round, never by silence). You do not need to edit YAML by hand: ask in any session or run `/spec-resolve`, which presents pendings one by one.
+**Speed — the commands dispatch**: six of the nine commands keep the judgment (and the human's answers) in the session and send the independent work to scoped children: `spec-recon` (survey, while you answer), `spec-explainer` (trace), `spec-implementer` (code from your brief), `spec-gate`, `spec-auditor` (one per change, cap 6), `spec-walkthrough`. Two rules apply everywhere: **independent work goes out in one batch** — never in series — and the parent **vets what comes back**, because a child's diff, finding or `file:line` is a claim until checked. Batching what you *ask* the human is fine (`/spec-add` asks clarifications + approval in one message, `/spec-resolve` puts every pending in one round); assuming their answer never is.
+
+**Approvals — how they happen**: the human authorizes with an **explicit sentence** in the conversation; the agent **writes the record**; the gate **verifies the record** (never the other way round, never by silence). You do not need to edit YAML by hand: ask in any session or run `/spec-resolve`, which presents every pending in one round.
 
 | What awaits your approval | Recorded as | What the gate checks |
 |---|---|---|
@@ -103,6 +108,7 @@ Simple, mechanical work runs in a **background subagent with a cheap model**; in
 - **Protected**: never set `human_approved: true` on your own; the human indicates it explicitly.
 - **Capabilities**: declare `provides: [cap:x]` in the owning spec; do not create duplicates.
 - **Reuse first** (code minimalism): the ladder lives in `AGENTS.md`. Orient before exploring: the **native LSP tool** for symbols (`lsp: true`; grep for literals), `codebase-memory` only in large repos, and `node scripts/gates/build-map.mjs` as the zero-dependency fallback.
+- **Dispatch, do not trust**: launch scoped children for the independent work (`spec-recon`, `spec-explainer`, `spec-implementer`, `spec-gate`, `spec-auditor`, `spec-walkthrough`) — in one batch when independent, never in series. Children never approve, sign or decide; **one implementation worker per change** (you or the child, never both); the parent **verifies what a child wrote or changed** (`git diff --stat` vs the brief, `file:line`, evidence) before reporting it, and does the work itself if a child fails. A child that finds nothing says so — treat an empty result as a result, not as a failure to retry.
 - **Tech brief**: when a change touches persistence/state, concurrency, networking, platform SDKs, security or adds a dependency, declare `tech_brief: true`; write `walkthrough.md` in the plainest language and generate 3 change-specific questions at apply. **Never fake the human's answers** — the sign-off is theirs, recorded only after their explicit confirmation.
 - The agent proposes and executes; **the human decides**. One apply = one branch = one change.
 - **Clean context** when implementing: a fresh (or deliberately compacted) session (mixed evidence: one study with a modest result, p≈0.07 — a reasonable heuristic, not a universal law).

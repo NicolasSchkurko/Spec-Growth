@@ -34,20 +34,7 @@ const evidence = lib.readEvidence(root);
 
 // declared dependency graph (change -> deps); archived deps count as resolved
 const byIdAll = new Map(changes.map((c) => [c.id, c]));
-const restIdOf = (name) => String(name).replace(/^\d{4}-\d{2}-\d{2}-/, "");
-const depResolves = (dep) =>
-  archived.some((a) => restIdOf(a) === dep) || digestIds.includes(dep);
-const depNodes = new Set();
-const depEdges = [];
-for (const c of changes) {
-  for (const d of c.deps) {
-    const dep = String(d);
-    depNodes.add(c.id);
-    depNodes.add(dep);
-    const target = byIdAll.get(dep);
-    depEdges.push({ from: dep, to: c.id, verified: target ? target.status === "verified" : depResolves(dep) ? true : null });
-  }
-}
+const { edges: depEdges, mermaid: depMermaid } = lib.dependencyGraph(changes, { archived, digestIds });
 
 // capabilities (living + deltas) — only for visible duplicates
 const caps = new Map();
@@ -271,35 +258,7 @@ md += caps.size
       .join("\n")
   : "_(none registered)_";
 md += `\n\n## Dependency graph (declared deps)\n\n`;
-if (depNodes.size) {
-  const slug = (s) => String(s).replace(/[^A-Za-z0-9_]/g, "_");
-  md += "```mermaid\ngraph LR\n";
-  for (const id of [...depNodes].sort((a, b) => a.localeCompare(b))) {
-    const c = byIdAll.get(id);
-    const resolved = !c && depResolves(id);
-    const cls = c
-      ? ["draft", "accepted", "applying", "verified"].includes(c.status)
-        ? c.status
-        : "other"
-      : resolved
-        ? "archived"
-        : "other";
-    md += `  ${slug(id)}["${id}${c ? ` (${c.status})` : resolved ? " (archived)" : " (unknown)"}"]:::${cls}\n`;
-  }
-  for (const e of depEdges) {
-    const lbl = e.verified === false ? "|unverified|" : e.verified === null ? "|unknown|" : "";
-    md += `  ${slug(e.from)} -->${lbl} ${slug(e.to)}\n`;
-  }
-  md += "  classDef draft fill:#f2f2f2,stroke:#999,color:#333;\n";
-  md += "  classDef accepted fill:#fff8dd,stroke:#ccaa00,color:#333;\n";
-  md += "  classDef applying fill:#e8f0ff,stroke:#4477cc,color:#333;\n";
-  md += "  classDef verified fill:#e8ffe8,stroke:#33aa33,color:#333;\n";
-  md += "  classDef archived fill:#eef2f7,stroke:#8899aa,color:#333;\n";
-  md += "  classDef other fill:#ffe8e8,stroke:#cc4444,color:#333;\n";
-  md += "```";
-} else {
-  md += "_(no declared dependencies)_";
-}
+md += depMermaid ? "```mermaid\n" + depMermaid + "```" : "_(no declared dependencies)_";
 md += `\n\n## Archive\n\n- Archived changes: ${archived.length}`;
 if (digests.length) md += ` · digests: ${digests.join(", ")}`;
 md += "\n";

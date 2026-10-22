@@ -2,6 +2,54 @@
 
 Recipes for the situations that come up most. All of them assume the repository has been bootstrapped (see the [README](../README.md#quickstart)).
 
+## 0. What runs in the background (the commands that dispatch)
+
+| Command | What goes out (in one batch) | What stays with you |
+|---|---|---|
+| `/spec-add` | `spec-recon`: reuse candidates, protected zones, overlaps, prior decisions | the single round of questions + the draft |
+| `/spec-triage` | `spec-explainer` (the code side) + `spec-recon` (the spec side) | the one question: who is right? |
+| `/spec-apply` | `spec-implementer`, then `spec-gate` + `spec-walkthrough` | the brief, the approvals, the join |
+| `/spec-verify` | `spec-gate` + one `spec-auditor` per active change | the teach-back, the vetted report |
+| `/spec-explain` | `spec-explainer` (one per independent behavior, cap 3) | verifying the hops and delivering it in its own words |
+| `/spec-resolve` | — (one `question` round replaces N turns) | every decision |
+| `/spec-gate` · `/spec-deps-graph` · `/diagram-sync` | the whole command is the child | — |
+
+The two rules: **independent work goes out in one batch**, and **what a child returns is a claim** until the parent checks it (the diff against the brief, the `file:line`s against the code). Nothing human-only is delegated.
+
+`/spec-apply` and `/spec-verify` in detail:
+
+```mermaid
+sequenceDiagram
+    participant Dev as You
+    participant Ag as Session
+    participant I as spec-implementer child
+    participant G as spec-gate child
+    participant W as spec-walkthrough child
+    participant A as spec-auditor children
+    Dev->>Ag: /spec-apply offline-notes
+    Ag->>I: dispatch: brief (goal per requirement + allowed files)
+    I-->>Ag: code + tests (report)
+    Ag->>Ag: check the diff against the brief
+    Ag->>G: dispatch: gate-check --run-tests (background)
+    Ag->>W: dispatch: write walkthrough.md (background)
+    G-->>Ag: GATE GREEN (evidence recorded)
+    W-->>Ag: walkthrough written (+ flags)
+    Ag->>Ag: verify every file:line the child claimed
+    Dev->>Ag: /spec-verify → comprehension sign-off
+    Ag->>G: dispatch: gate (reuses fresh evidence)
+    Ag->>A: dispatch: one auditor per active change (background)
+    A-->>Ag: findings (file:line)
+    Ag->>Dev: vetted findings + teach-back (3 questions together)
+```
+
+1. `/spec-apply` **orients, then hands the implementation** to the `spec-implementer` child with a precise brief: the goal per requirement, the allowed files (`targets` + `tests`) and the reuse-first ladder. The child is a fresh context by construction. Risky changes (architecture, protected zone, anything that would need a question mid-way) are implemented in the session instead — a child has nobody to ask.
+2. The parent **checks the diff against the brief** and, as soon as the code and tests hold, launches the gate and the tech-brief drafter **in one batch**.
+3. `/spec-verify` launches the gate and **one read-only auditor per active change** (capped at 6; beyond that, group by capability) and runs the teach-back while they work.
+4. The parent **vets** everything that came back: a changed file outside the brief, every `file:line` in a finding or in the walkthrough is checked against the real code before you see it. A child that fails or times out is re-run, or the parent does the work and says so.
+5. Nothing human-only is delegated: approvals, waivers, decisions, conflicts and the comprehension sign-off are the session's and yours. **One implementation worker per change** — the parent or the child, never both.
+
+What is relaxed is only the waiting, never a check.
+
 ## 1. A new feature
 
 ```mermaid

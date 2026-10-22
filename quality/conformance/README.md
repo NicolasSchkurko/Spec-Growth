@@ -9,7 +9,7 @@ Rule of thumb: **same prompts, same model, same checkers, before/after.** If the
 For each anchor task it:
 
 1. Builds a clean fixture repo (template + optional seed) under `runs/<task>/run<N>/repo`, with git initialized.
-2. Runs the real agent headless: `opencode run "<prompt>" --model <model> --auto` (default model: `opencode-go/deepseek-v4.1-flash`).
+2. Runs the real agent headless: `opencode run "<prompt>" --model <model> --auto` (default model: the free tier, `opencode/glm-5.3-flash-free`; override with `CONF_MODEL` or `--model` — a run is only comparable to a baseline measured on the same model).
 3. Captures the transcript and runs the mechanical checkers (`check.mjs`) against the resulting repo.
 4. Optionally runs a cross-family LLM judge (`opencode-go/gpt-6-luna`) for the semantic rules.
 5. Writes `result.json` per run.
@@ -43,7 +43,7 @@ Env overrides: `CONF_MODEL` (agent under test), `CONF_JUDGE` (judge model), `OPE
 
 ## Cost & time
 
-Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` without `--judge`): 21 agent runs. On `deepseek-v4.1-flash` (~2–4 min per run, concurrency 3): roughly 20–40 min wall clock and single-digit dollars. Start with `t1-add --runs 1` to validate the harness.
+Full suite: 21 agent runs + 13 judge calls. Mechanical-only (`node run.mjs` without `--judge`): 21 agent runs. Budget ~2–4 min per run at concurrency 3 — roughly 20–40 min wall clock — and check the cost of whichever model you pass with `--model`: a free tier is free, a paid one is not. Start with `t1-add --runs 1` to validate the harness.
 
 ## Baseline protocol
 

@@ -35,8 +35,10 @@ const root = normalize(getVal("--root") || lib.resolveRoot(process.cwd()) || pro
 const archiveDir = join(root, "openspec", "changes", "archive");
 
 if (!existsSync(archiveDir)) {
-  console.error(`openspec/changes/archive/ not found under: ${root}`);
-  process.exit(1);
+  // A repo that never archived anything has nothing to compact: that is a normal
+  // state, not an error (INIT does not create archive/ until the first archive).
+  console.log(`No openspec/changes/archive/ yet under ${root} - nothing to compact.`);
+  process.exit(0);
 }
 
 const cutoff = Date.now() - days * 86400000;
