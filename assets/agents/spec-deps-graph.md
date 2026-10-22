@@ -1,7 +1,6 @@
 ---
 description: Spec Growth — runs build-graph.mjs and writes one plain line per non-archived spec and change. Read-only.
 mode: subagent
-model: opencode/deepseek-v4.1-flash-free
 steps: 12
 permissions:
   - action: edit

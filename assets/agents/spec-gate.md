@@ -1,7 +1,6 @@
 ---
 description: Spec Growth — runs the mechanical gate and regenerates the BOARD. Measures, never fixes.
 mode: subagent
-model: opencode/deepseek-v4.1-flash-free
 steps: 12
 ---
 

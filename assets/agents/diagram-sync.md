@@ -1,7 +1,6 @@
 ---
 description: Spec Growth — diffs ARCHITECTURE.dsl against code and IaC, keeps capability tags honest, validates with Structurizr.
 mode: subagent
-model: opencode/deepseek-v4.1-flash-free
 steps: 14
 ---
 

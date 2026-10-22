@@ -1,7 +1,6 @@
 ---
 description: Spec Growth — read-only recon for a request or discrepancy: existing contracts, reuse candidates, protected zones, overlaps and prior decisions. Returns a fixed digest; edits nothing.
 mode: subagent
-model: opencode/deepseek-v4.1-flash-free
 steps: 20
 permissions:
   - action: edit
