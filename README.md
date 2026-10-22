@@ -70,8 +70,7 @@ quality/            the conformance suite and its recorded results
 
 ## Status
 
-**v1.5 prototype** (branch `experiment/fast-path`) — speeds up the slow commands: add/triage/apply/verify/explain dispatch their independent work (survey, implementation, test suite, per-change audit, tech brief, trace) to scoped child sessions and join the results, without relaxing the gate, the evidence or any human-only record. **v1.4** adds `/spec-deps-graph` (the declared-deps graph plus a one-line inventory of what the non-archived specs do, on a free background model); quotes every `rules:` item in the scaffold `config.yaml` (OpenSpec used to drop the `proposal` rules in silence) and documents how to split a capability; hardened through adversarial audit rounds and validated by a frozen conformance suite ([`quality/conformance/`](quality/conformance/README.md)) with a measured token diet. What is implemented, and what is deliberately not, lives in `SKILL.md` → [`references/status.md`](references/status.md); the research base and the consolidated limits are in [Evidence & limits](references/evidence.md).
-
+**v1.6** — Method evaluation and limitations documented. This release adds an explicit assessment of Spec Growth's practical value, observed limitations, and unresolved risks. See Conclusions and limitations for the full assessment.
 ## Tests
 
 ```bash
