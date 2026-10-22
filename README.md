@@ -6,6 +6,8 @@ Specs are the living contract of the present; changes are the future in flight; 
 
 The system exists for two failure modes of AI-assisted development: agents lose quality as their context fills up, and specs drift silently away from the code. Its answer: every behavior change travels through a change folder with machine-readable metadata, and the invariants live in a deterministic gate — not in prose an agent can forget.
 
+> **Conclusions and limitations (v1.6)** — brief: Spec Growth is a promising companion method, not a proven general approach; it makes decisions, changes and verification conditions explicit rather than eliminating errors; its main pending limitation is that it checks spec/code agreement, not real behavioral correctness or the developer's comprehension. [Full conclusions → `docs/conclusions.md`](docs/conclusions.md)
+
 ## Quickstart
 
 **Prerequisites:** Node ≥ 20.19 · git · the OpenSpec CLI (`@fission-ai/openspec`) · OpenCode.
